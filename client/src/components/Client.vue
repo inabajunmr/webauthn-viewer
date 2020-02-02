@@ -2,7 +2,8 @@
   <div>
     <h1>WebAuthn Client for Learning</h1>
 
-    <h2>navigator.credentials.create() parameters</h2>
+    <h2>navigator.credentials.create()</h2>
+    <h3>Request</h3>
     <label>rp.name:</label><input type="text" v-model="reqRpName"><br>
     <label>user.id:</label><input type="text" v-model="reqUserId"><br>
     <label>user.name:</label><input type="text" v-model="reqUserName"><br>
@@ -14,13 +15,18 @@
     <label>challenge:</label><input type="text" v-model="reqChallenge"><br>
     
     <input type="button" value="navigator.credentials.create()" @click="create()">
-    <h2>navigator.credentials.create() result</h2>
+
+    <h3>Response</h3>
     <label>rawId:</label>
     <div>{{resRawId}}</div>
     <label>response.attestationObject:</label>
     <div>{{resResponseAttestationObject}}</div>
+    <label>response.clientDataJSON:</label>
+    <div>{{resResponseClientDataJSON}}</div>
     <label>id:</label>
     <div>{{resId}}</div>
+    <label>type:</label>
+    <div>{{resType}}</div>
 
     <h2>navigator.credentials.get() parameters</h2>
     <textarea rows="30" cols="60"></textarea>
@@ -49,7 +55,9 @@ export default {
       createResult: "",
       resRawId: "",
       resResponseAttestationObject: "",
-      resId: ""
+      resResponseClientDataJSON: "",
+      resId: "",
+      resType: ""
     }
   },
   methods: {
@@ -57,30 +65,23 @@ export default {
       this.rpName = ''
     },
     create() {
-      // TODO use input value
       navigator.credentials.create({
         publicKey: {
-            // Relying Party (a.k.a. - Service):
             rp: {
                 name: this.reqRpName
             },
-
-            // User:
             user: {
                 id: this.reqUserId,
-                name: "john.p.smith@example.com",
-                displayName: "John P. Smith"
+                name: this.reqUserName,
+                displayName: this.reqUserDisplayName
             },
-
             pubKeyCredParams: [{
-                type: "public-key",
-                alg: -7
+                type: this.reqPubKeyCredParamsType,
+                alg: this.reqPubKeyCredParamsAlg
             }],
-
-            attestation: "direct",
-
-            timeout: 60000,
-
+            attestation: this.reqAttestation,
+            timeout: this.reqTimeout,
+            // TODO
             challenge: new Uint8Array([ // サーバーから暗号学的にランダムな値が送られていなければならない
                 0x8C, 0x0A, 0x26, 0xFF, 0x22, 0x91, 0xC1, 0xE9, 0xB9, 0x4E, 0x2E, 0x17, 0x1A, 0x98, 0x6A, 0x73,
                 0x71, 0x9D, 0x43, 0x48, 0xD5, 0xA7, 0x6A, 0x15, 0x7E, 0x38, 0x94, 0x52, 0x77, 0x97, 0x0F, 0xEF
@@ -94,7 +95,9 @@ export default {
           this.createResult = JSON.stringify(res)
           this.resRawId = new Int8Array(res.rawId);
           this.resResponseAttestationObject = new Int8Array(res.response.attestationObject)
-          this.resId = res.id
+          this.resResponseClientDataJSON = new Int8Array(res.response.clientDataJSON)      
+          this.resId = res.id     
+          this.resType = res.type
       }).catch((err) => {
           this.createResult = JSON.stringify(err)
           this.createResult = "ERROR"
