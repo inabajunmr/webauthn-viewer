@@ -81,17 +81,8 @@
         </div>
         <div class="column is-half">
           <h3 class="title">Response</h3>
-          <div class="container">
-            <table class="table is-fullwidth">
+            <table class="table is-responsive">
                 <tbody>
-                    <tr>
-                      <th>rawId</th>
-                      <td>{{createResponseRawId}}</td>
-                    </tr>
-                    <tr>
-                      <th>rawId</th>
-                      <td>{{createResponseRawId}}</td>
-                    </tr>
                     <tr>
                       <th>response.attestationObject</th>
                       <td>{{createResponseResponseAttestationObject}}</td>
@@ -110,7 +101,6 @@
                     </tr>
                 </tbody>
             </table>
-          </div>
         </div>
       </div>
     </div>
