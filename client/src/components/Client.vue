@@ -84,8 +84,16 @@
             <table class="table is-responsive">
                 <tbody>
                     <tr>
-                      <th>response.attestationObject</th>
-                      <td>{{createResponseResponseAttestationObject}}</td>
+                      <th>response.attestationObject.fmt</th>
+                      <td>{{createResponseResponseAttestationObjectFmt}}</td>
+                    </tr>
+                    <tr>
+                      <th>response.attestationObject.attStmt</th>
+                      <td>{{createResponseResponseAttestationObjectAttStmt}}</td>
+                    </tr>
+                    <tr>
+                      <th>response.attestationObject.authData</th>
+                      <td>{{createResponseResponseAttestationObjectAuthData}}</td>
                     </tr>
                     <tr>
                       <th>response.clientDataJSON</th>
@@ -161,11 +169,33 @@ export default {
     createResponseRawId: function() {
       return new Int8Array(this.createResponse.rawId)
     },
-    createResponseResponseAttestationObject: function() {
+    createResponseResponseAttestationObjectFmt: function() {
       if (this.createResponse.response == undefined) {
         return ""
       }
-      return new Int8Array(this.createResponse.response.attestationObject)
+      var cbor = require('cbor');
+      return cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0].fmt
+    },
+    createResponseResponseAttestationObjectAttStmt: function() {
+      if (this.createResponse.response == undefined) {
+        return ""
+      }
+      var cbor = require('cbor');
+      return cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0].attStmt
+    },
+    createResponseResponseAttestationObjectAuthData: function() {
+      if (this.createResponse.response == undefined) {
+        return ""
+      }
+      var cbor = require('cbor');
+      
+      var localAtt = cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0]
+      var authDataArray = localAtt.authData
+      console.log(localAtt)
+      console.log(String.fromCharCode.apply(null, authDataArray))
+
+      // TODO parse authDataArray https://www.w3.org/TR/webauthn/#authenticator-data
+      return cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0].authData
     },
     createResponseResponseClientDataJSON: function() {
       if (this.createResponse.response == undefined) {
