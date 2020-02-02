@@ -191,10 +191,24 @@ export default {
       
       var localAtt = cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0]
       var authDataArray = localAtt.authData
-      console.log(localAtt)
-      console.log(String.fromCharCode.apply(null, authDataArray))
+      console.log(authDataArray)
 
       // TODO parse authDataArray https://www.w3.org/TR/webauthn/#authenticator-data
+      const rpidHash = authDataArray.slice( 0, 32);
+      const flag     = authDataArray.slice(32, 33); //.readUInt8(0)
+      const counter  = authDataArray.slice(33, 37); //.readUInt32BE(0)
+      const aaguid   = authDataArray.slice(37, 53);
+      const credentialIdLengthTmp = authDataArray.slice(53, 55);
+      const credentialIdLength = (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
+      const credentialId        = authDataArray.slice(55, 55 + credentialIdLength);
+
+      console.log(rpidHash)
+      console.log(flag)
+      console.log(counter)
+      console.log(Buffer.from(aaguid).toString('hex'))
+      console.log(credentialIdLength)
+      console.log(credentialId)
+
       return cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0].authData
     },
     createResponseResponseClientDataJSON: function() {
