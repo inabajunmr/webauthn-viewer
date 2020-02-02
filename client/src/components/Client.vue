@@ -197,17 +197,31 @@ export default {
       const rpidHash = authDataArray.slice( 0, 32);
       const flag     = authDataArray.slice(32, 33); //.readUInt8(0)
       const counter  = authDataArray.slice(33, 37); //.readUInt32BE(0)
+      // TODO この後はatによっては存在しない
       const aaguid   = authDataArray.slice(37, 53);
       const credentialIdLengthTmp = authDataArray.slice(53, 55);
       const credentialIdLength = (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
       const credentialId        = authDataArray.slice(55, 55 + credentialIdLength);
 
-      console.log(rpidHash)
-      console.log(flag)
-      console.log(counter)
-      console.log(Buffer.from(aaguid).toString('hex'))
-      console.log(credentialIdLength)
-      console.log(credentialId)
+      console.log("rpidHash", Buffer.from(rpidHash).toString('hex'))
+      console.log("flag", flag)
+      var length = flag.length;
+      let buffer = Buffer.from(flag);
+      var result = buffer.readUIntBE(0, length);
+      var up = 1 == result.toString(2)[0]
+      var uv = 1 == result.toString(2)[2]
+      var at = 1 == result.toString(2)[6]
+      var ed = 1 == result.toString(2)[7]
+      console.log("up", up)
+      console.log("uv", uv)
+      console.log("at", at)
+      console.log("ed", ed)
+
+      console.log("counter", counter)
+      // TODO https://mds2.fidoalliance.org/tokens/
+      console.log("aaguid", Buffer.from(aaguid).toString('hex'))
+      console.log("credentialIdLength",credentialIdLength)
+      console.log("credentialId",credentialId)
 
       return cbor.decodeAllSync(new Buffer(this.createResponse.response.attestationObject))[0].authData
     },
