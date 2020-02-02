@@ -1,38 +1,119 @@
 <template>
   <div>
-    <h1>WebAuthn Client for Learning</h1>
 
-    <h2>navigator.credentials.create()</h2>
-    <h3>Request</h3>
-    <label>rp.name:</label><input type="text" v-model="reqRpName"><br>
-    <label>user.id:</label><input type="text" v-model="reqUserId"><br>
-    <label>user.name:</label><input type="text" v-model="reqUserName"><br>
-    <label>user.displayName:</label><input type="text" v-model="reqUserDisplayName"><br>
-    <label>pubKeyCredParams.type:</label><input type="text" v-model="reqPubKeyCredParamsType"><br>
-    <label>pubKeyCredParams.alg:</label><input type="text" v-model="reqPubKeyCredParamsAlg"><br>
-    <label>attestation:</label><input type="text" v-model="reqAttestation"><br>
-    <label>timeout:</label><input type="text" v-model="reqTimeout"><br>
-    <label>challenge:</label><input type="text" v-model="reqChallenge"><br>
-    
-    <input type="button" value="navigator.credentials.create()" @click="create()">
-
-    <h3>Response</h3>
-    <label>rawId:</label>
-    <div>{{resRawId}}</div>
-    <label>response.attestationObject:</label>
-    <div>{{resResponseAttestationObject}}</div>
-    <label>response.clientDataJSON:</label>
-    <div>{{resResponseClientDataJSON}}</div>
-    <label>id:</label>
-    <div>{{resId}}</div>
-    <label>type:</label>
-    <div>{{resType}}</div>
-
-    <h2>navigator.credentials.get() parameters</h2>
-    <textarea rows="30" cols="60"></textarea>
-    <input type="button" value="navigator.credentials.get()">
-    <h2>navigator.credentials.get() result</h2>
-    <textarea rows="30" cols="60"></textarea>
+    <div class="container is-size-6">
+      <div class="columns">
+        <div class="column is-half">
+          <h3 class="title">Request</h3>
+          <div class="field">
+            <label class="label is-small">rp.name</label>
+            <div class="control">
+              <input class="input is-small" type="text" placeholder="Text input" v-model="reqRpName">
+            </div>
+          </div>
+          <div class="field">
+            <label class="label is-small">user.id</label>
+            <div class="control">
+              <input class="input is-small" type="text" placeholder="Text input" v-model="reqUserId">
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">user.name</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqUserName">
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <div class="column">
+                <label class="label is-small">user.displayName</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqUserDisplayName">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">pubKeyCredParams.type</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqPubKeyCredParamsType">
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">pubKeyCredParams.alg</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqPubKeyCredParamsAlg">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">attestation</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqAttestation">
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">timeout</label>
+                <div class="control">
+                  <input class="input is-small" type="text" placeholder="Text input" v-model="reqTimeout">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label is-small">challenge</label>
+            <div class="control">
+              <input class="input is-small" type="text" placeholder="Text input" v-model="reqChallenge">
+            </div>
+          </div>
+          <input type="button" value="navigator.credentials.create()" class="button is-primary" @click="create()">
+        </div>
+        <div class="column is-half">
+          <h3 class="title">Response</h3>
+          <div class="container">
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                      <th>rawId</th>
+                      <td>{{createResponseRawId}}</td>
+                    </tr>
+                    <tr>
+                      <th>rawId</th>
+                      <td>{{createResponseRawId}}</td>
+                    </tr>
+                    <tr>
+                      <th>response.attestationObject</th>
+                      <td>{{createResponseResponseAttestationObject}}</td>
+                    </tr>
+                    <tr>
+                      <th>response.clientDataJSON</th>
+                      <td>{{createResponseResponseClientDataJSON}}</td>
+                    </tr>
+                    <tr>
+                      <th>id</th>
+                      <td>{{createResponseId}}</td>
+                    </tr>
+                    <tr>
+                      <th>type</th>
+                      <td>{{createResponseType}}</td>
+                    </tr>
+                </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -57,15 +138,13 @@ export default {
       resResponseAttestationObject: "",
       resResponseClientDataJSON: "",
       resId: "",
-      resType: ""
+      resType: "",
+      createResponse : {}
     }
   },
-  methods: {
-    clear () {
-      this.rpName = ''
-    },
-    create() {
-      navigator.credentials.create({
+  computed :{
+    buildCreateRequest: function() {
+      return {
         publicKey: {
             rp: {
                 name: this.reqRpName
@@ -87,20 +166,44 @@ export default {
                 0x71, 0x9D, 0x43, 0x48, 0xD5, 0xA7, 0x6A, 0x15, 0x7E, 0x38, 0x94, 0x52, 0x77, 0x97, 0x0F, 0xEF
             ]).buffer
         }        
-      })
+      }
+    },
+    createResponseRawId: function() {
+      return new Int8Array(this.createResponse.rawId)
+    },
+    createResponseResponseAttestationObject: function() {
+      if (this.createResponse.response == undefined) {
+        return ""
+      }
+      return new Int8Array(this.createResponse.response.attestationObject)
+    },
+    createResponseResponseClientDataJSON: function() {
+      if (this.createResponse.response == undefined) {
+        return ""
+      }
+      return new Int8Array(this.createResponse.response.clientDataJSON)
+    },
+    createResponseId: function() {
+      return this.createResponse.id
+    },
+    createResponseType: function() {
+      return this.createResponse.type
+    },
+  },
+  methods: {
+    clear () {
+      this.rpName = ''
+    },
+    create() {
+      navigator.credentials.create(this.buildCreateRequest)
       .then((res) => {
           console.log(res)
-          // TODO all field
-          // TODO decode
-          this.createResult = JSON.stringify(res)
-          this.resRawId = new Int8Array(res.rawId);
-          this.resResponseAttestationObject = new Int8Array(res.response.attestationObject)
-          this.resResponseClientDataJSON = new Int8Array(res.response.clientDataJSON)      
-          this.resId = res.id     
-          this.resType = res.type
+          this.createResponse = res
       }).catch((err) => {
-          this.createResult = JSON.stringify(err)
-          this.createResult = "ERROR"
+          console.log(err)
+          // TODO
+          // this.createResponse = JSON.stringify(err)
+          // this.createResponse = "ERROR"
       });
     }
   }
