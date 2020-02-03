@@ -16,15 +16,21 @@
             </div>
           </div>
           <div class="field">
-            <label class="label is-small">user.id</label>
+            <label class="label is-small">user.id(Base64 encoded)</label>
             <div class="control">
               <input
                 class="input is-small"
                 type="text"
                 placeholder="Text input"
-                v-model="reqUserId"
+                v-model="useridForView"
               />
             </div>
+            <input
+              type="button"
+              value="Generate"
+              class="button is-primary"
+              @click="generateRandomUserId()"
+            />
           </div>
           <div class="columns">
             <div class="column">
@@ -117,10 +123,18 @@
                 class="input is-small"
                 type="text"
                 placeholder="Text input"
-                v-model="reqChallenge"
+                v-model="challengeForView"
               />
             </div>
           </div>
+              <input
+                type="button"
+                value="Generate"
+                class="button is-primary"
+                @click="generateChallenge()"
+              />              
+          <br>
+          <br>
           <input
             type="button"
             value="navigator.credentials.create()"
@@ -271,48 +285,14 @@ export default {
   data() {
     return {
       reqRpName: "Acme",
-      reqUserId: new Uint8Array(16),
+      reqUserId: this.generateRandomUserId(),
       reqUserName: "john.p.smith@example.com",
       reqUserDisplayName: "John P. Smith",
       reqPubKeyCredParamsType: "public-key",
       reqPubKeyCredParamsAlg: -7,
       reqAttestation: "direct",
       reqTimeout: 60000,
-      reqChallenge: new Uint8Array([
-        // サーバーから暗号学的にランダムな値が送られていなければならない
-        0x8c,
-        0x0a,
-        0x26,
-        0xff,
-        0x22,
-        0x91,
-        0xc1,
-        0xe9,
-        0xb9,
-        0x4e,
-        0x2e,
-        0x17,
-        0x1a,
-        0x98,
-        0x6a,
-        0x73,
-        0x71,
-        0x9d,
-        0x43,
-        0x48,
-        0xd5,
-        0xa7,
-        0x6a,
-        0x15,
-        0x7e,
-        0x38,
-        0x94,
-        0x52,
-        0x77,
-        0x97,
-        0x0f,
-        0xef
-      ]).buffer,
+      reqChallenge: this.generateChallenge(),
       createResult: "",
       resRawId: "",
       resResponseAttestationObject: "",
@@ -323,8 +303,15 @@ export default {
     };
   },
   computed: {
+    useridForView: function() {
+      return btoa(String.fromCharCode(...this.reqUserId));
+    },
+    challengeForView: function() {
+      return btoa(String.fromCharCode(...this.reqChallenge));
+    },
     buildCreateRequest: function() {
       return {
+        // rp.id?
         publicKey: {
           rp: {
             name: this.reqRpName
@@ -342,42 +329,7 @@ export default {
           ],
           attestation: this.reqAttestation,
           timeout: this.reqTimeout,
-          // TODO
-          challenge: new Uint8Array([
-            // サーバーから暗号学的にランダムな値が送られていなければならない
-            0x8c,
-            0x0a,
-            0x26,
-            0xff,
-            0x22,
-            0x91,
-            0xc1,
-            0xe9,
-            0xb9,
-            0x4e,
-            0x2e,
-            0x17,
-            0x1a,
-            0x98,
-            0x6a,
-            0x73,
-            0x71,
-            0x9d,
-            0x43,
-            0x48,
-            0xd5,
-            0xa7,
-            0x6a,
-            0x15,
-            0x7e,
-            0x38,
-            0x94,
-            0x52,
-            0x77,
-            0x97,
-            0x0f,
-            0xef
-          ]).buffer
+          challenge: this.reqChallenge
         }
       };
     },
@@ -472,10 +424,8 @@ export default {
     }
   },
   methods: {
-    clear() {
-      this.rpName = "";
-    },
     create() {
+      console.log(this.buildCreateRequest);
       navigator.credentials
         .create(this.buildCreateRequest)
         .then(res => {
@@ -488,6 +438,14 @@ export default {
           // this.createResponse = JSON.stringify(err)
           // this.createResponse = "ERROR"
         });
+    },
+    generateRandomUserId() {
+      this.reqUserId = require("crypto").randomBytes(32)
+      return this.reqUserId;
+    },
+    generateChallenge() {
+      this.reqChallenge = require("crypto").randomBytes(32)
+      return this.reqChallenge;
     }
   }
 };
