@@ -130,21 +130,30 @@
         </div>
         <div class="column">
           <h3 class="title">Response</h3>
-          <table class="table is-responsive" style="table-layout: fixed; width: 100%">
+          <table
+            class="table is-responsive"
+            style="table-layout: fixed; width: 100%"
+          >
             <tbody>
               <!-- TODO tab for each object -->
               <tr>
                 <th>.response</th>
                 <td></td>
-              </tr>              
+              </tr>
+              <tr>
+                <th style="padding-left: 20px">.clientDataJSON</th>
+                <td style="word-wrap: break-word">
+                  {{ createResponseResponseClientDataJSON }}
+                </td>
+              </tr>
               <tr>
                 <th style="padding-left: 20px">.attestationObject</th>
                 <td></td>
-              </tr>              
+              </tr>
               <tr>
                 <th style="padding-left: 40px">.authData</th>
                 <td></td>
-              </tr>              
+              </tr>
               <tr>
                 <th style="padding-left: 60px">.rpidHash</th>
                 <td style="word-wrap: break-word">
@@ -234,17 +243,13 @@
                 </td>
               </tr>
               <tr>
-                <th style="padding-left: 20px">.clientDataJSON</th>
-                <td style="word-wrap: break-word">{{ createResponseResponseClientDataJSON }}</td>
-              </tr>
-              <tr>
                 <th style="padding-left: 40px">.fmt</th>
                 <td>{{ createResponseResponseAttestationObjectFmt }}</td>
               </tr>
               <tr>
                 <th style="padding-left: 40px">.attStmt</th>
                 <td>{{ createResponseResponseAttestationObjectAttStmt }}</td>
-              </tr>              
+              </tr>
               <tr>
                 <th>.id</th>
                 <td style="word-wrap: break-word">{{ createResponseId }}</td>
@@ -456,8 +461,8 @@ export default {
       if (this.createResponse.response == undefined) {
         return "";
       }
-      // TODO decode
-      return new Int8Array(this.createResponse.response.clientDataJSON);
+      var enc = new TextDecoder("utf-8");
+      return enc.decode(this.createResponse.response.clientDataJSON);
     },
     createResponseId: function() {
       return this.createResponse.id;
