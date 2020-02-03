@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div class="container is-size-6">
+    <div class="container is-size-7">
       <div class="columns">
-        <div class="column is-half">
+        <div class="column is-one-third">
           <h3 class="title">Request</h3>
           <div class="field">
             <label class="label is-small">rp.name</label>
@@ -128,29 +128,33 @@
             @click="create()"
           />
         </div>
-        <div class="column is-half">
+        <div class="column">
           <h3 class="title">Response</h3>
-          <table class="table is-responsive">
+          <table class="table is-responsive" style="table-layout: fixed; width: 100%">
             <tbody>
               <!-- TODO tab for each object -->
               <tr>
-                <th>response.attestationObject.fmt</th>
-                <td>{{ createResponseResponseAttestationObjectFmt }}</td>
-              </tr>
+                <th>.response</th>
+                <td></td>
+              </tr>              
               <tr>
-                <th>response.attestationObject.attStmt</th>
-                <td>{{ createResponseResponseAttestationObjectAttStmt }}</td>
-              </tr>
+                <th style="padding-left: 20px">.attestationObject</th>
+                <td></td>
+              </tr>              
               <tr>
-                <th>response.attestationObject.authData.rpidHash</th>
-                <td>
+                <th style="padding-left: 40px">.authData</th>
+                <td></td>
+              </tr>              
+              <tr>
+                <th style="padding-left: 60px">.rpidHash</th>
+                <td style="word-wrap: break-word">
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.rpidHash
                   }}
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.flag.up</th>
+                <th style="padding-left: 60px">.flag.up</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.flag ==
@@ -162,7 +166,7 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.flag.uv</th>
+                <th style="padding-left: 60px">.flag.uv</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.flag ==
@@ -174,7 +178,7 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.flag.at</th>
+                <th style="padding-left: 60px">.flag.at</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.flag ==
@@ -186,7 +190,7 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.flag.ed</th>
+                <th style="padding-left: 60px">.flag.ed</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.flag ==
@@ -198,7 +202,7 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.signCount</th>
+                <th style="padding-left: 60px">.signCount</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.signCount
@@ -206,7 +210,7 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.aaguid</th>
+                <th style="padding-left: 60px">.aaguid</th>
                 <td>
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.aaguid
@@ -214,32 +218,40 @@
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.credentialId</th>
-                <td>
+                <th style="padding-left: 60px">.credentialId</th>
+                <td style="word-wrap: break-word">
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.credentialId
                   }}
                 </td>
               </tr>
               <tr>
-                <th>response.attestationObject.authData.credentialPublicKey</th>
-                <td>
+                <th style="padding-left: 60px">.credentialPublicKey</th>
+                <td style="word-wrap: break-word">
                   {{
                     createResponseResponseAttestationObjectAuthDataForView.credentialPublicKey
                   }}
                 </td>
               </tr>
               <tr>
-                <th>response.clientDataJSON</th>
-                <td>{{ createResponseResponseClientDataJSON }}</td>
+                <th style="padding-left: 20px">.clientDataJSON</th>
+                <td style="word-wrap: break-word">{{ createResponseResponseClientDataJSON }}</td>
               </tr>
               <tr>
-                <th>id</th>
-                <td>{{ createResponseId }}</td>
+                <th style="padding-left: 40px">.fmt</th>
+                <td>{{ createResponseResponseAttestationObjectFmt }}</td>
               </tr>
               <tr>
-                <th>type</th>
-                <td>{{ createResponseType }}</td>
+                <th style="padding-left: 40px">.attStmt</th>
+                <td>{{ createResponseResponseAttestationObjectAttStmt }}</td>
+              </tr>              
+              <tr>
+                <th>.id</th>
+                <td style="word-wrap: break-word">{{ createResponseId }}</td>
+              </tr>
+              <tr>
+                <th>.type</th>
+                <td style="word-wrap: break-word">{{ createResponseType }}</td>
               </tr>
             </tbody>
           </table>
@@ -415,6 +427,7 @@ export default {
       const credentialIdLengthTmp = authDataArray.slice(53, 55);
       const credentialIdLength =
         (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
+      // TODO base64かもしれん
       const credentialId = authDataArray.slice(55, 55 + credentialIdLength);
       const credentialPublicKey = authDataArray.slice(55 + credentialIdLength);
 
