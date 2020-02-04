@@ -12,7 +12,18 @@
   </div>
 </template>
 
-<script></script>
+<script>
+import Create from "./Create.vue";
+import Get from "./Get.vue";
+
+export default {
+  name: "app",
+  components: {
+    Create,
+    Get
+  }
+};
+</script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped></style>
