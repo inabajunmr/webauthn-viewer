@@ -1,309 +1,327 @@
 <template>
   <div>
-    <div class="container is-size-7">
-      <div class="columns">
-        <div class="column is-one-third">
-          <h3 class="title">Request</h3>
+    <b-tabs>
+      <b-tab-item label="navigator.credentias.create()">
+        <div class="container is-size-7">
           <div class="columns">
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">rp.name</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqRpName"
-                  />
+            <div class="column is-one-third">
+              <h3 class="title">Request</h3>
+              <div class="columns">
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">rp.name</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqRpName"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">rp.id</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqRpId"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div class="field">
+                <label class="label is-small">user.id(Base64 encoded)</label>
+                <div class="columns">
+                  <div class="column">
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="useridForView"
+                      />
+                    </div>
+                  </div>
+                  <div class="column">
+                    <input
+                      type="button"
+                      value="Generate"
+                      class="button is-primary is-small"
+                      @click="generateRandomUserId()"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="columns">
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">user.name</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqUserName"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="column">
+                    <label class="label is-small">user.displayName</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqUserDisplayName"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="columns">
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">pubKeyCredParams.type</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqPubKeyCredParamsType"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">pubKeyCredParams.alg</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqPubKeyCredParamsAlg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="columns">
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">attestation</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqAttestation"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="column">
+                  <div class="field">
+                    <label class="label is-small">timeout</label>
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="reqTimeout"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label is-small">challenge(Base64 encoded)</label>
+                <div class="columns">
+                  <div class="column">
+                    <div class="control">
+                      <input
+                        class="input is-small"
+                        type="text"
+                        placeholder="Text input"
+                        v-model="challengeForView"
+                      />
+                    </div>
+                  </div>
+                  <div class="column">
+                    <input
+                      type="button"
+                      value="Generate"
+                      class="button is-primary is-small"
+                      @click="generateChallenge()"
+                    />
+                  </div>
+                </div>
+              </div>
+              <input
+                type="button"
+                value="navigator.credentials.create()"
+                class="button is-primary"
+                @click="create()"
+              />
             </div>
             <div class="column">
-              <div class="field">
-                <label class="label is-small">rp.id</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqRpId"
-                  />
-                </div>
-              </div>
+              <h3 class="title">Response</h3>
+              <table
+                class="table is-responsive"
+                style="table-layout: fixed; width: 100%"
+              >
+                <tbody>
+                  <!-- TODO tab for each object -->
+                  <tr>
+                    <th>.response</th>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 20px">.clientDataJSON</th>
+                    <td style="word-wrap: break-word">
+                      {{ createResponseResponseClientDataJSON }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 20px">.attestationObject</th>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 40px">.authData</th>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.rpidHash</th>
+                    <td style="word-wrap: break-word">
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.rpidHash
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.flag.up</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.flag ==
+                        undefined
+                          ? ""
+                          : createResponseResponseAttestationObjectAuthDataForView
+                              .flag.up
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.flag.uv</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.flag ==
+                        undefined
+                          ? ""
+                          : createResponseResponseAttestationObjectAuthDataForView
+                              .flag.uv
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.flag.at</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.flag ==
+                        undefined
+                          ? ""
+                          : createResponseResponseAttestationObjectAuthDataForView
+                              .flag.at
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.flag.ed</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.flag ==
+                        undefined
+                          ? ""
+                          : createResponseResponseAttestationObjectAuthDataForView
+                              .flag.ed
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.signCount</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.signCount
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.aaguid</th>
+                    <td>
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.aaguid
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.credentialId</th>
+                    <td style="word-wrap: break-word">
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.credentialId
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 60px">.credentialPublicKey</th>
+                    <td style="word-wrap: break-word">
+                      {{
+                        createResponseResponseAttestationObjectAuthDataForView.credentialPublicKey
+                      }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 40px">.fmt</th>
+                    <td>{{ createResponseResponseAttestationObjectFmt }}</td>
+                  </tr>
+                  <tr>
+                    <th style="padding-left: 40px">.attStmt</th>
+                    <td>
+                      {{ createResponseResponseAttestationObjectAttStmt }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>.id</th>
+                    <td style="word-wrap: break-word">
+                      {{ createResponseId }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>.type</th>
+                    <td style="word-wrap: break-word">
+                      {{ createResponseType }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          <div class="field">
-            <label class="label is-small">user.id(Base64 encoded)</label>
-            <div class="columns">
-              <div class="column">
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="useridForView"
-                  />
-                </div>
-              </div>
-              <div class="column">
-                <input
-                  type="button"
-                  value="Generate"
-                  class="button is-primary is-small"
-                  @click="generateRandomUserId()"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="columns">
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">user.name</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqUserName"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <div class="column">
-                <label class="label is-small">user.displayName</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqUserDisplayName"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="columns">
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">pubKeyCredParams.type</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqPubKeyCredParamsType"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">pubKeyCredParams.alg</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqPubKeyCredParamsAlg"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="columns">
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">attestation</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqAttestation"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="column">
-              <div class="field">
-                <label class="label is-small">timeout</label>
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="reqTimeout"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="field">
-            <label class="label is-small">challenge</label>
-            <div class="columns">
-              <div class="column">
-                <div class="control">
-                  <input
-                    class="input is-small"
-                    type="text"
-                    placeholder="Text input"
-                    v-model="challengeForView"
-                  />
-                </div>
-              </div>
-              <div class="column">
-                <input
-                  type="button"
-                  value="Generate"
-                  class="button is-primary is-small"
-                  @click="generateChallenge()"
-                />
-              </div>
-            </div>
-          </div>
-          <input
-            type="button"
-            value="navigator.credentials.create()"
-            class="button is-primary"
-            @click="create()"
-          />
         </div>
-        <div class="column">
-          <h3 class="title">Response</h3>
-          <table
-            class="table is-responsive"
-            style="table-layout: fixed; width: 100%"
-          >
-            <tbody>
-              <!-- TODO tab for each object -->
-              <tr>
-                <th>.response</th>
-                <td></td>
-              </tr>
-              <tr>
-                <th style="padding-left: 20px">.clientDataJSON</th>
-                <td style="word-wrap: break-word">
-                  {{ createResponseResponseClientDataJSON }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 20px">.attestationObject</th>
-                <td></td>
-              </tr>
-              <tr>
-                <th style="padding-left: 40px">.authData</th>
-                <td></td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.rpidHash</th>
-                <td style="word-wrap: break-word">
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.rpidHash
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.flag.up</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.flag ==
-                    undefined
-                      ? ""
-                      : createResponseResponseAttestationObjectAuthDataForView
-                          .flag.up
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.flag.uv</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.flag ==
-                    undefined
-                      ? ""
-                      : createResponseResponseAttestationObjectAuthDataForView
-                          .flag.uv
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.flag.at</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.flag ==
-                    undefined
-                      ? ""
-                      : createResponseResponseAttestationObjectAuthDataForView
-                          .flag.at
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.flag.ed</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.flag ==
-                    undefined
-                      ? ""
-                      : createResponseResponseAttestationObjectAuthDataForView
-                          .flag.ed
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.signCount</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.signCount
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.aaguid</th>
-                <td>
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.aaguid
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.credentialId</th>
-                <td style="word-wrap: break-word">
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.credentialId
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 60px">.credentialPublicKey</th>
-                <td style="word-wrap: break-word">
-                  {{
-                    createResponseResponseAttestationObjectAuthDataForView.credentialPublicKey
-                  }}
-                </td>
-              </tr>
-              <tr>
-                <th style="padding-left: 40px">.fmt</th>
-                <td>{{ createResponseResponseAttestationObjectFmt }}</td>
-              </tr>
-              <tr>
-                <th style="padding-left: 40px">.attStmt</th>
-                <td>{{ createResponseResponseAttestationObjectAttStmt }}</td>
-              </tr>
-              <tr>
-                <th>.id</th>
-                <td style="word-wrap: break-word">{{ createResponseId }}</td>
-              </tr>
-              <tr>
-                <th>.type</th>
-                <td style="word-wrap: break-word">{{ createResponseType }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+      </b-tab-item>
+
+      <b-tab-item label="navigator.credentias.get()">
+        Lorem <br />
+        ipsum <br />
+        dolor <br />
+        sit <br />
+        amet.
+      </b-tab-item>
+    </b-tabs>
   </div>
 </template>
 
@@ -428,8 +446,8 @@ export default {
         },
         signCount: signCount,
         aaguid: Buffer.from(aaguid).toString("hex"),
-        credentialId: new Int8Array(credentialId),
-        credentialPublicKey: new Int8Array(credentialPublicKey)
+        credentialId: btoa(String.fromCharCode(...credentialId)),
+        credentialPublicKey: btoa(String.fromCharCode(...credentialPublicKey))
       };
     },
     createResponseResponseAttestationObjectExtension: function() {
