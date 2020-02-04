@@ -32,6 +32,17 @@
           </div>
         </div>
         <div class="field">
+          <label class="label is-small">rp.icon</label>
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="reqRpIcon"
+            />
+          </div>
+        </div>
+        <div class="field">
           <label class="label is-small">user.id(Base64 encoded)</label>
           <div class="columns">
             <div class="column">
@@ -80,6 +91,17 @@
                 />
               </div>
             </div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label is-small">user.icon</label>
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="reqUserIcon"
+            />
           </div>
         </div>
         <div class="columns">
@@ -138,6 +160,47 @@
             </div>
           </div>
         </div>
+        <div class="field">
+          <label class="label is-small"
+            >authenticatorSection.authenticationAttachment</label
+          >
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="reqAuthenticatorSectionAuthenticationAttachment"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label is-small"
+            >authenticatorSection.requireResidentKey</label
+          >
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="reqAuthenticatorSectionRequireResidentKey"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label is-small"
+            >authenticatorSection.userVerification</label
+          >
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="reqAuthenticatorSectionUserVerification"
+            />
+          </div>
+        </div>
+        <!-- authenticatorSection-->
+        <!-- excludeCredentials-->
         <div class="field">
           <label class="label is-small">challenge(Base64 encoded)</label>
           <div class="columns">
@@ -330,11 +393,16 @@ export default {
       errorMessage: "",
       reqRpName: "Acme",
       reqRpId: "localhost",
+      reqRpIcon: "",
       reqUserId: this.generateRandomUserId(),
       reqUserName: "john.p.smith@example.com",
+      reqUserIcon: "",
       reqUserDisplayName: "John P. Smith",
       reqPubKeyCredParamsType: "public-key",
       reqPubKeyCredParamsAlg: -7,
+      reqAuthenticatorSectionAuthenticationAttachment: "cross-platform",
+      reqAuthenticatorSectionRequireResidentKey: false,
+      reqAuthenticatorSectionUserVerification: "required",
       reqAttestation: "direct",
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
@@ -355,29 +423,39 @@ export default {
       return btoa(String.fromCharCode(...this.reqChallenge));
     },
     buildCreateRequest: function() {
-      return {
-        // rp.id?
-        publicKey: {
-          rp: {
-            name: this.reqRpName,
-            id: this.reqRpId
-          },
-          user: {
-            id: this.reqUserId,
-            name: this.reqUserName,
-            displayName: this.reqUserDisplayName
-          },
-          pubKeyCredParams: [
-            {
-              type: this.reqPubKeyCredParamsType,
-              alg: this.reqPubKeyCredParamsAlg
-            }
-          ],
-          attestation: this.reqAttestation,
-          timeout: this.reqTimeout,
-          challenge: this.reqChallenge
-        }
-      };
+      let request = {};
+      request.publicKey = {};
+      request.publicKey.rp = {};
+      request.publicKey.rp.name = this.reqRpName;
+      request.publicKey.rp.id = this.reqRpId;
+      request.publicKey.rp.icon = this.reqRpIcon;
+      request.publicKey.user = {};
+      request.publicKey.user.id = this.reqUserId;
+      request.publicKey.user.name = this.reqUserName;
+      request.publicKey.user.icon = this.reqUserIcon;
+      request.publicKey.user.displayName = this.reqUserDisplayName;
+      request.publicKey.pubKeyCredParams = [];
+      request.publicKey.pubKeyCredParams[0] = {};
+      request.publicKey.pubKeyCredParams[0].type = this.reqPubKeyCredParamsType;
+      request.publicKey.pubKeyCredParams[0].alg = this.reqPubKeyCredParamsAlg;
+      request.publicKey.authenticatorSelection = {};
+      if (this.reqAuthenticatorSectionAuthenticationAttachment) {
+        request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqAuthenticatorSectionAuthenticationAttachment;
+      }
+      if (this.reqAuthenticatorSectionRequireResidentKey) {
+        request.publicKey.authenticatorSelection.requireResidentKey = this.reqAuthenticatorSectionRequireResidentKey;
+      }
+      if (this.reqAuthenticatorSectionUserVerification) {
+        request.publicKey.authenticatorSelection.userVerification = this.reqAuthenticatorSectionUserVerification;
+      }
+      if (this.reqAuthenticatorSectionUserVerification) {
+        request.publicKey.authenticatorSelection.userVerification = this.reqAuthenticatorSectionUserVerification;
+      }
+      request.publicKey.attestation = this.reqAttestation;
+      request.publicKey.timeout = this.reqTimeout;
+      request.publicKey.challenge = this.reqChallenge;
+
+      return request;
     },
     createResponseRawId: function() {
       return new Int8Array(this.createResponse.rawId);
@@ -404,6 +482,7 @@ export default {
       if (this.createResponse.response == undefined) {
         return "";
       }
+      console.log(this.createResponse.response);
       var cbor = require("cbor");
       var authDataArray = cbor.decodeAllSync(
         new Buffer(this.createResponse.response.attestationObject)
@@ -429,12 +508,18 @@ export default {
       let credentialId;
       let credentialPublicKey;
       if (at) {
-        aaguid = authDataArray.slice(37, 53);
+        aaguid = Buffer.from(authDataArray.slice(37, 53)).toString("hex");
         const credentialIdLengthTmp = authDataArray.slice(53, 55);
         const credentialIdLength =
           (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
-        credentialId = authDataArray.slice(55, 55 + credentialIdLength);
-        credentialPublicKey = authDataArray.slice(55 + credentialIdLength);
+        credentialId = btoa(
+          String.fromCharCode(
+            ...authDataArray.slice(55, 55 + credentialIdLength)
+          )
+        );
+        credentialPublicKey = btoa(
+          String.fromCharCode(...authDataArray.slice(55 + credentialIdLength))
+        );
       }
 
       // TODO Extension data
@@ -447,9 +532,9 @@ export default {
           ed: ed
         },
         signCount: signCount,
-        aaguid: Buffer.from(aaguid).toString("hex"),
-        credentialId: btoa(String.fromCharCode(...credentialId)),
-        credentialPublicKey: btoa(String.fromCharCode(...credentialPublicKey))
+        aaguid: aaguid,
+        credentialId: credentialId,
+        credentialPublicKey: credentialPublicKey
       };
     },
     createResponseResponseAttestationObjectExtension: function() {
