@@ -175,7 +175,18 @@
           style="table-layout: fixed; width: 100%"
         >
           <tbody>
-            <!-- TODO tab for each object -->
+            <tr>
+              <th>Error</th>
+              <td style="word-wrap: break-word">
+                {{ errorType }}
+              </td>
+            </tr>
+            <tr>
+              <th>Error message</th>
+              <td style="word-wrap: break-word">
+                {{ errorMessage }}
+              </td>
+            </tr>
             <tr>
               <th>.response</th>
               <td></td>
@@ -315,6 +326,8 @@
 export default {
   data() {
     return {
+      errorType: "",
+      errorMessage: "",
       reqRpName: "Acme",
       reqRpId: "localhost",
       reqUserId: this.generateRandomUserId(),
@@ -399,7 +412,7 @@ export default {
       // parse authDataArray https://www.w3.org/TR/webauthn/#authenticator-data
       const rpidHash = authDataArray.slice(0, 32);
       const flag = authDataArray.slice(32, 33); //.readUInt8(0)
-      const signCountArray = authDataArray.slice(33, 37); //.readUInt32BE(0) // TODO
+      const signCountArray = authDataArray.slice(33, 37);
       const clength = signCountArray.length;
       const cbuffer = Buffer.from(signCountArray);
       const signCount = cbuffer.readUIntBE(0, clength);
@@ -412,14 +425,17 @@ export default {
       const at = 1 == result.toString(2)[6];
       const ed = 1 == result.toString(2)[7];
 
-      // TODO この後はatによっては存在しない
-      const aaguid = authDataArray.slice(37, 53);
-      const credentialIdLengthTmp = authDataArray.slice(53, 55);
-      const credentialIdLength =
-        (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
-      // TODO base64かもしれん
-      const credentialId = authDataArray.slice(55, 55 + credentialIdLength);
-      const credentialPublicKey = authDataArray.slice(55 + credentialIdLength);
+      let aaguid;
+      let credentialId;
+      let credentialPublicKey;
+      if (at) {
+        aaguid = authDataArray.slice(37, 53);
+        const credentialIdLengthTmp = authDataArray.slice(53, 55);
+        const credentialIdLength =
+          (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
+        credentialId = authDataArray.slice(55, 55 + credentialIdLength);
+        credentialPublicKey = authDataArray.slice(55 + credentialIdLength);
+      }
 
       // TODO Extension data
       return {
@@ -437,7 +453,6 @@ export default {
       };
     },
     createResponseResponseAttestationObjectExtension: function() {
-      // TODO
       return require("cbor").decodeAllSync(
         new Buffer(this.createResponse.response.extensions)
       )[0];
@@ -458,6 +473,12 @@ export default {
   },
   methods: {
     create() {
+      // reset
+      this.errorType = "";
+      this.errorMessage = "";
+      this.createResponse = {};
+
+      // call webauthn api
       console.log(this.buildCreateRequest);
       navigator.credentials
         .create(this.buildCreateRequest)
@@ -467,7 +488,8 @@ export default {
         })
         .catch(err => {
           console.log(err);
-          // TODO
+          this.errorType = err.name;
+          this.errorMessage = err.message;
           // this.createResponse = JSON.stringify(err)
           // this.createResponse = "ERROR"
         });
