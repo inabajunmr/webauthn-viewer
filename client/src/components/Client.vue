@@ -4,33 +4,56 @@
       <div class="columns">
         <div class="column is-one-third">
           <h3 class="title">Request</h3>
-          <div class="field">
-            <label class="label is-small">rp.name</label>
-            <div class="control">
-              <input
-                class="input is-small"
-                type="text"
-                placeholder="Text input"
-                v-model="reqRpName"
-              />
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">rp.name</label>
+                <div class="control">
+                  <input
+                    class="input is-small"
+                    type="text"
+                    placeholder="Text input"
+                    v-model="reqRpName"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="field">
+                <label class="label is-small">rp.id</label>
+                <div class="control">
+                  <input
+                    class="input is-small"
+                    type="text"
+                    placeholder="Text input"
+                    v-model="reqRpId"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div class="field">
             <label class="label is-small">user.id(Base64 encoded)</label>
-            <div class="control">
-              <input
-                class="input is-small"
-                type="text"
-                placeholder="Text input"
-                v-model="useridForView"
-              />
+            <div class="columns">
+              <div class="column">
+                <div class="control">
+                  <input
+                    class="input is-small"
+                    type="text"
+                    placeholder="Text input"
+                    v-model="useridForView"
+                  />
+                </div>
+              </div>
+              <div class="column">
+                <input
+                  type="button"
+                  value="Generate"
+                  class="button is-primary is-small"
+                  @click="generateRandomUserId()"
+                />
+              </div>
             </div>
-            <input
-              type="button"
-              value="Generate"
-              class="button is-primary"
-              @click="generateRandomUserId()"
-            />
           </div>
           <div class="columns">
             <div class="column">
@@ -118,23 +141,27 @@
           </div>
           <div class="field">
             <label class="label is-small">challenge</label>
-            <div class="control">
-              <input
-                class="input is-small"
-                type="text"
-                placeholder="Text input"
-                v-model="challengeForView"
-              />
+            <div class="columns">
+              <div class="column">
+                <div class="control">
+                  <input
+                    class="input is-small"
+                    type="text"
+                    placeholder="Text input"
+                    v-model="challengeForView"
+                  />
+                </div>
+              </div>
+              <div class="column">
+                <input
+                  type="button"
+                  value="Generate"
+                  class="button is-primary is-small"
+                  @click="generateChallenge()"
+                />
+              </div>
             </div>
           </div>
-              <input
-                type="button"
-                value="Generate"
-                class="button is-primary"
-                @click="generateChallenge()"
-              />              
-          <br>
-          <br>
           <input
             type="button"
             value="navigator.credentials.create()"
@@ -285,6 +312,7 @@ export default {
   data() {
     return {
       reqRpName: "Acme",
+      reqRpId: "localhost",
       reqUserId: this.generateRandomUserId(),
       reqUserName: "john.p.smith@example.com",
       reqUserDisplayName: "John P. Smith",
@@ -314,7 +342,8 @@ export default {
         // rp.id?
         publicKey: {
           rp: {
-            name: this.reqRpName
+            name: this.reqRpName,
+            id: this.reqRpId
           },
           user: {
             id: this.reqUserId,
@@ -440,11 +469,11 @@ export default {
         });
     },
     generateRandomUserId() {
-      this.reqUserId = require("crypto").randomBytes(32)
+      this.reqUserId = require("crypto").randomBytes(32);
       return this.reqUserId;
     },
     generateChallenge() {
-      this.reqChallenge = require("crypto").randomBytes(32)
+      this.reqChallenge = require("crypto").randomBytes(32);
       return this.reqChallenge;
     }
   }
