@@ -199,11 +199,16 @@
             />
           </div>
         </div>
-        <!-- excludeCredentials-->        
-        <div class="field" v-for="(excludeCredential, index) in reqExcludeCredentials" v-bind:key="excludeCredential.id">
-        <div class="columns">
-          <div class="column">
-              <label class="label is-small">excludeCredentials[{{index}}].type</label>
+        <!-- excludeCredentials-->
+        <label class="label is-small">excludeCredentials[]</label>
+        <div
+          class="field box"
+          v-for="excludeCredential in reqExcludeCredentials"
+          v-bind:key="excludeCredential.id"
+        >
+          <div class="columns">
+            <div class="column">
+              <label class="label is-small">.type</label>
               <div class="control">
                 <input
                   class="input is-small"
@@ -211,39 +216,48 @@
                   placeholder="Text input"
                   v-model="excludeCredential.type"
                 />
+              </div>
+            </div>
+            <div class="column">
+              <label class="label is-small">.transports</label>
+              <div class="control" style="font-size: 0.75rem;">
+                <label class="checkbox">
+                  <input type="checkbox" value="usb" v-model="excludeCredential.transports" />
+                  usb
+                </label>
+                <label class="checkbox">
+                  <input type="checkbox" value="ble" v-model="excludeCredential.transports"/>
+                  ble
+                </label>
+                <label class="checkbox">
+                  <input type="checkbox" value="nfc" v-model="excludeCredential.transports"/>
+                  nfc
+                </label>
+                <label class="checkbox">
+                  <input type="checkbox" value="internal" v-model="excludeCredential.transports"/>
+                  internal
+                </label>                                
+              </div>              
             </div>
           </div>
-          <!-- TODO multiple selector -->
-          <div class="column">
-              <label class="label is-small">excludeCredentials[{{index}}].transports</label>
-              <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
-                  placeholder="Text input"
-                  v-model="excludeCredential.transports"
-                />
-            </div>
+          <label class="label is-small">.id(Base64 encoded)</label>
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="excludeCredential.id"
+            />
           </div>
         </div>
-          <label class="label is-small">excludeCredentials[{{index}}].id</label>
-              <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
-                  placeholder="Text input"
-                  v-model="excludeCredential.id"
-                />
-        </div>      
-        </div>      
         <div class="field">
-              <input
-                type="button"
-                value="Add excludeCredentials"
-                class="button is-primary is-small"
-                @click="addExcludeCredentials()"
-              />
-        </div>  
+          <input
+            type="button"
+            value="Add excludeCredentials"
+            class="button is-primary is-small"
+            @click="addExcludeCredentials()"
+          />
+        </div>
         <div class="field">
           <label class="label is-small">challenge(Base64 encoded)</label>
           <div class="columns">
@@ -455,8 +469,9 @@ export default {
       resResponseClientDataJSON: "",
       resId: "",
       resType: "",
-      reqExcludeCredentials: [{}],
-      createResponse: {}
+      reqExcludeCredentials: [{transports:[]}],
+      createResponse: {},
+      transports: ["usb","ble","nfc","internal"]
     };
   },
   computed: {
@@ -498,8 +513,32 @@ export default {
       request.publicKey.attestation = this.reqAttestation;
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = this.reqChallenge;
-      // TODO excludeCredentials
 
+      // TODO excludeCredentials
+      request.publicKey.excludeCredentials = []
+
+
+      console.log("this.reqExcludeCredentials", this.reqExcludeCredentials)
+      for(let i = 0; i < this.reqExcludeCredentials.length; i++) {
+        let exist = false
+        let excludeCredential = this.reqExcludeCredentials[i]
+        let credentials = {}
+        // credentials.transports = excludeCredential.transports
+        // exist = credentials.transports.length != 0
+        if(excludeCredential.id) {
+          credentials.id = Uint8Array.from(atob(excludeCredential.id), c => c.charCodeAt(0))
+          exist = true
+        }
+        if(excludeCredential.type) {
+          credentials.type = excludeCredential.type
+          exist = true          
+        }        
+        console.log("credentias", credentials)
+        console.log("excludeCredential", excludeCredential)
+        if (exist) {
+          request.publicKey.excludeCredentials.push(credentials)
+        }
+      }
       return request;
     },
     createResponseRawId: function() {
@@ -620,8 +659,6 @@ export default {
           console.log(err);
           this.errorType = err.name;
           this.errorMessage = err.message;
-          // this.createResponse = JSON.stringify(err)
-          // this.createResponse = "ERROR"
         });
     },
     generateRandomUserId() {
@@ -633,7 +670,7 @@ export default {
       return this.reqChallenge;
     },
     addExcludeCredentials() {
-      this.reqExcludeCredentials.push({})
+      this.reqExcludeCredentials.push({transports:[]});
     }
   }
 };
