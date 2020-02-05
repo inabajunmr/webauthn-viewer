@@ -536,16 +536,11 @@ export default {
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = this.reqChallenge;
 
-      // TODO excludeCredentials
       request.publicKey.excludeCredentials = [];
-
-      console.log("this.reqExcludeCredentials", this.reqExcludeCredentials);
       for (let i = 0; i < this.reqExcludeCredentials.length; i++) {
         let exist = false;
         let excludeCredential = this.reqExcludeCredentials[i];
         let credentials = {};
-        // credentials.transports = excludeCredential.transports
-        // exist = credentials.transports.length != 0
         if (excludeCredential.id) {
           credentials.id = Uint8Array.from(atob(excludeCredential.id), c =>
             c.charCodeAt(0)
@@ -556,8 +551,6 @@ export default {
           credentials.type = excludeCredential.type;
           exist = true;
         }
-        console.log("credentias", credentials);
-        console.log("excludeCredential", excludeCredential);
         if (exist) {
           request.publicKey.excludeCredentials.push(credentials);
         }
