@@ -469,7 +469,7 @@ export default {
       resResponseClientDataJSON: "",
       resId: "",
       resType: "",
-      reqExcludeCredentials: [{transports:[]}],
+      reqExcludeCredentials: [],
       createResponse: {},
       transports: ["usb","ble","nfc","internal"]
     };
