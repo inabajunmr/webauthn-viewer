@@ -104,33 +104,44 @@
             />
           </div>
         </div>
-        <div class="columns">
-          <div class="column">
-            <div class="field">
-              <label class="label is-small">pubKeyCredParams.type</label>
+        <label class="label is-small">excludeCredentials[]</label>
+        <div
+          class="field box"
+          v-for="pubKeyCredParam in reqPubKeyCredParams"
+          v-bind:key="pubKeyCredParam.alg"
+        >
+          <div class="columns">
+            <div class="column">
+              <label class="label is-small">.type</label>
               <div class="control">
                 <input
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="reqPubKeyCredParamsType"
+                  v-model="pubKeyCredParam.type"
                 />
               </div>
             </div>
-          </div>
-          <div class="column">
-            <div class="field">
-              <label class="label is-small">pubKeyCredParams.alg</label>
+            <div class="column">
+              <label class="label is-small">.alg</label>
               <div class="control">
                 <input
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="reqPubKeyCredParamsAlg"
+                  v-model="pubKeyCredParam.alg"
                 />
               </div>
             </div>
           </div>
+        </div>
+        <div class="field">
+          <input
+            type="button"
+            value="Add pubKeyCredParam"
+            class="button is-primary is-small"
+            @click="addPubKeyCredParam()"
+          />
         </div>
         <div class="columns">
           <div class="column">
@@ -199,7 +210,6 @@
             />
           </div>
         </div>
-        <!-- excludeCredentials-->
         <label class="label is-small">excludeCredentials[]</label>
         <div
           class="field box"
@@ -222,22 +232,38 @@
               <label class="label is-small">.transports</label>
               <div class="control" style="font-size: 0.75rem;">
                 <label class="checkbox">
-                  <input type="checkbox" value="usb" v-model="excludeCredential.transports" />
+                  <input
+                    type="checkbox"
+                    value="usb"
+                    v-model="excludeCredential.transports"
+                  />
                   usb
                 </label>
                 <label class="checkbox">
-                  <input type="checkbox" value="ble" v-model="excludeCredential.transports"/>
+                  <input
+                    type="checkbox"
+                    value="ble"
+                    v-model="excludeCredential.transports"
+                  />
                   ble
                 </label>
                 <label class="checkbox">
-                  <input type="checkbox" value="nfc" v-model="excludeCredential.transports"/>
+                  <input
+                    type="checkbox"
+                    value="nfc"
+                    v-model="excludeCredential.transports"
+                  />
                   nfc
                 </label>
                 <label class="checkbox">
-                  <input type="checkbox" value="internal" v-model="excludeCredential.transports"/>
+                  <input
+                    type="checkbox"
+                    value="internal"
+                    v-model="excludeCredential.transports"
+                  />
                   internal
-                </label>                                
-              </div>              
+                </label>
+              </div>
             </div>
           </div>
           <label class="label is-small">.id(Base64 encoded)</label>
@@ -449,14 +475,13 @@ export default {
       errorType: "",
       errorMessage: "",
       reqRpName: "Acme",
-      reqRpId: "localhost",
+      reqRpId: window.location.hostname,
       reqRpIcon: "",
       reqUserId: this.generateRandomUserId(),
       reqUserName: "john.p.smith@example.com",
       reqUserIcon: "",
       reqUserDisplayName: "John P. Smith",
-      reqPubKeyCredParamsType: "public-key",
-      reqPubKeyCredParamsAlg: -7,
+      reqPubKeyCredParams: [{ type: "public-key", alg: -7 }],
       reqAuthenticatorSectionAuthenticationAttachment: "cross-platform",
       reqAuthenticatorSectionRequireResidentKey: false,
       reqAuthenticatorSectionUserVerification: "required",
@@ -471,7 +496,7 @@ export default {
       resType: "",
       reqExcludeCredentials: [],
       createResponse: {},
-      transports: ["usb","ble","nfc","internal"]
+      transports: ["usb", "ble", "nfc", "internal"]
     };
   },
   computed: {
@@ -493,10 +518,7 @@ export default {
       request.publicKey.user.name = this.reqUserName;
       request.publicKey.user.icon = this.reqUserIcon;
       request.publicKey.user.displayName = this.reqUserDisplayName;
-      request.publicKey.pubKeyCredParams = [];
-      request.publicKey.pubKeyCredParams[0] = {};
-      request.publicKey.pubKeyCredParams[0].type = this.reqPubKeyCredParamsType;
-      request.publicKey.pubKeyCredParams[0].alg = this.reqPubKeyCredParamsAlg;
+      request.publicKey.pubKeyCredParams = this.reqPubKeyCredParams;
       request.publicKey.authenticatorSelection = {};
       if (this.reqAuthenticatorSectionAuthenticationAttachment) {
         request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqAuthenticatorSectionAuthenticationAttachment;
@@ -515,28 +537,29 @@ export default {
       request.publicKey.challenge = this.reqChallenge;
 
       // TODO excludeCredentials
-      request.publicKey.excludeCredentials = []
+      request.publicKey.excludeCredentials = [];
 
-
-      console.log("this.reqExcludeCredentials", this.reqExcludeCredentials)
-      for(let i = 0; i < this.reqExcludeCredentials.length; i++) {
-        let exist = false
-        let excludeCredential = this.reqExcludeCredentials[i]
-        let credentials = {}
+      console.log("this.reqExcludeCredentials", this.reqExcludeCredentials);
+      for (let i = 0; i < this.reqExcludeCredentials.length; i++) {
+        let exist = false;
+        let excludeCredential = this.reqExcludeCredentials[i];
+        let credentials = {};
         // credentials.transports = excludeCredential.transports
         // exist = credentials.transports.length != 0
-        if(excludeCredential.id) {
-          credentials.id = Uint8Array.from(atob(excludeCredential.id), c => c.charCodeAt(0))
-          exist = true
+        if (excludeCredential.id) {
+          credentials.id = Uint8Array.from(atob(excludeCredential.id), c =>
+            c.charCodeAt(0)
+          );
+          exist = true;
         }
-        if(excludeCredential.type) {
-          credentials.type = excludeCredential.type
-          exist = true          
-        }        
-        console.log("credentias", credentials)
-        console.log("excludeCredential", excludeCredential)
+        if (excludeCredential.type) {
+          credentials.type = excludeCredential.type;
+          exist = true;
+        }
+        console.log("credentias", credentials);
+        console.log("excludeCredential", excludeCredential);
         if (exist) {
-          request.publicKey.excludeCredentials.push(credentials)
+          request.publicKey.excludeCredentials.push(credentials);
         }
       }
       return request;
@@ -670,7 +693,10 @@ export default {
       return this.reqChallenge;
     },
     addExcludeCredentials() {
-      this.reqExcludeCredentials.push({transports:[]});
+      this.reqExcludeCredentials.push({ transports: [] });
+    },
+    addPubKeyCredParam() {
+      this.reqPubKeyCredParams.push({ type: "public-key" });
     }
   }
 };

@@ -5,7 +5,7 @@
         <h3 class="title">Request</h3>
         <input
           type="button"
-          value="navigator.credentials.create()"
+          value="navigator.credentials.get()"
           class="button is-primary"
           @click="create()"
         />
