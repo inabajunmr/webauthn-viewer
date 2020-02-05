@@ -199,8 +199,51 @@
             />
           </div>
         </div>
-        <!-- authenticatorSection-->
-        <!-- excludeCredentials-->
+        <!-- excludeCredentials-->        
+        <div class="field" v-for="(excludeCredential, index) in reqExcludeCredentials" v-bind:key="excludeCredential.id">
+        <div class="columns">
+          <div class="column">
+              <label class="label is-small">excludeCredentials[{{index}}].type</label>
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  placeholder="Text input"
+                  v-model="excludeCredential.type"
+                />
+            </div>
+          </div>
+          <!-- TODO multiple selector -->
+          <div class="column">
+              <label class="label is-small">excludeCredentials[{{index}}].transports</label>
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  placeholder="Text input"
+                  v-model="excludeCredential.transports"
+                />
+            </div>
+          </div>
+        </div>
+          <label class="label is-small">excludeCredentials[{{index}}].id</label>
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  placeholder="Text input"
+                  v-model="excludeCredential.id"
+                />
+        </div>      
+        </div>      
+        <div class="field">
+              <input
+                type="button"
+                value="Add excludeCredentials"
+                class="button is-primary is-small"
+                @click="addExcludeCredentials()"
+              />
+        </div>  
         <div class="field">
           <label class="label is-small">challenge(Base64 encoded)</label>
           <div class="columns">
@@ -412,6 +455,7 @@ export default {
       resResponseClientDataJSON: "",
       resId: "",
       resType: "",
+      reqExcludeCredentials: [{}],
       createResponse: {}
     };
   },
@@ -454,6 +498,7 @@ export default {
       request.publicKey.attestation = this.reqAttestation;
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = this.reqChallenge;
+      // TODO excludeCredentials
 
       return request;
     },
@@ -586,6 +631,9 @@ export default {
     generateChallenge() {
       this.reqChallenge = require("crypto").randomBytes(32);
       return this.reqChallenge;
+    },
+    addExcludeCredentials() {
+      this.reqExcludeCredentials.push({})
     }
   }
 };
