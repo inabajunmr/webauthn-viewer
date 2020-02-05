@@ -310,7 +310,7 @@
         <input
           type="button"
           value="navigator.credentials.create()"
-          class="button is-primary"
+          class="button is-primary is-large"
           @click="create()"
         />
       </div>

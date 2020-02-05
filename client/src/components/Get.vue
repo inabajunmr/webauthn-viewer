@@ -14,11 +14,11 @@
             />
           </div>
         </div>
-        <label class="label is-small">excludeCredentials[]</label>
+        <label class="label is-small">allowCredenials[]</label>
         <div
           class="field box"
-          v-for="pubKeyCredParam in reqPubKeyCredParams"
-          v-bind:key="pubKeyCredParam.alg"
+          v-for="allowCredential in reqAllowCredentials"
+          v-bind:key="allowCredential.alg"
         >
           <div class="columns">
             <div class="column">
@@ -28,29 +28,65 @@
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="pubKeyCredParam.type"
+                  v-model="allowCredential.type"
                 />
               </div>
             </div>
             <div class="column">
-              <label class="label is-small">.alg</label>
-              <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
-                  placeholder="Text input"
-                  v-model="pubKeyCredParam.alg"
-                />
+              <label class="label is-small">.transports</label>
+              <div class="control" style="font-size: 0.75rem;">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="usb"
+                    v-model="allowCredential.transports"
+                  />
+                  usb
+                </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="ble"
+                    v-model="allowCredential.transports"
+                  />
+                  ble
+                </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="nfc"
+                    v-model="allowCredential.transports"
+                  />
+                  nfc
+                </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="internal"
+                    v-model="allowCredential.transports"
+                  />
+                  internal
+                </label>
               </div>
             </div>
           </div>
+          <label class="label is-small">.id(Base64 encoded)</label>
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="Text input"
+              v-model="allowCredential.id"
+            />
+          </div>
         </div>
+
         <div class="field">
           <input
             type="button"
-            value="Add pubKeyCredParam"
+            value="Add allowCredentials"
             class="button is-primary is-small"
-            @click="addPubKeyCredParam()"
+            @click="addAllowCredentials()"
           />
         </div>
         <div class="field">
@@ -101,7 +137,7 @@
         <input
           type="button"
           value="navigator.credentials.get()"
-          class="button is-primary"
+          class="button is-primary is-large"
           @click="get()"
         />
       </div>
@@ -148,9 +184,10 @@ export default {
       errorType: "",
       errorMessage: "",
       reqRpid: window.location.hostname,
-      reqPubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      reqAllowCredentials: [],
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
+      reqUserVerification: "",
       createResult: "",
       resResponseClientDataJSON: "",
       reqExcludeCredentials: [],
@@ -275,15 +312,15 @@ export default {
       // reset
       this.errorType = "";
       this.errorMessage = "";
-      this.createResponse = {};
+      this.getResponse = {};
 
       // call webauthn api
-      console.log(this.buildCreateRequest);
+      console.log(this.buildGetRequest);
       navigator.credentials
-        .create(this.buildCreateRequest)
+        .create(this.buildGetRequest)
         .then(res => {
           console.log(res);
-          this.createResponse = res;
+          this.getResponse = res;
         })
         .catch(err => {
           console.log(err);
@@ -299,11 +336,8 @@ export default {
       this.reqChallenge = require("crypto").randomBytes(32);
       return this.reqChallenge;
     },
-    addExcludeCredentials() {
-      this.reqExcludeCredentials.push({ transports: [] });
-    },
-    addPubKeyCredParam() {
-      this.reqPubKeyCredParams.push({ type: "public-key" });
+    addAllowCredentials() {
+      this.reqAllowCredentials.push({ transports: [] });
     }
   }
 };
