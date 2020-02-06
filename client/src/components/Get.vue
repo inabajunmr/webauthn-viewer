@@ -161,13 +161,75 @@
               </td>
             </tr>
             <tr>
+              <th>.id</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.id }}
+              </td>
+            </tr>
+            <tr>
               <th>.response</th>
               <td></td>
             </tr>
             <tr>
               <th style="padding-left: 20px">.clientDataJSON</th>
               <td style="word-wrap: break-word">
-                {{ createResponseResponseClientDataJSON }}
+                {{ getResponseResponseClientDataJSON }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 20px">.authData</th>
+              <td></td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.rpidHash</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.rpidHash }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.flag.up</th>
+              <td>
+                {{
+                  getResponseView.flag == undefined
+                    ? ""
+                    : getResponseView.flag.up
+                }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.flag.uv</th>
+              <td>
+                {{
+                  getResponseView.flag == undefined
+                    ? ""
+                    : getResponseView.flag.uv
+                }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.flag.at</th>
+              <td>
+                {{
+                  getResponseView.flag == undefined
+                    ? ""
+                    : getResponseView.flag.at
+                }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.flag.ed</th>
+              <td>
+                {{
+                  getResponseView.flag == undefined
+                    ? ""
+                    : getResponseView.flag.ed
+                }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 40px">.signCount</th>
+              <td>
+                {{ getResponseView.signCount }}
               </td>
             </tr>
           </tbody>
@@ -190,121 +252,101 @@ export default {
       reqUserVerification: "",
       createResult: "",
       resResponseClientDataJSON: "",
-      reqExcludeCredentials: [],
-      createResponse: {},
+      getResponse: {},
       transports: ["usb", "ble", "nfc", "internal"]
     };
   },
   computed: {
-    useridForView: function() {
-      return btoa(String.fromCharCode(...this.reqUserId));
-    },
     challengeForView: function() {
       return btoa(String.fromCharCode(...this.reqChallenge));
     },
-    buildCreateRequest: function() {
+    buildGetRequest: function() {
       let request = {};
       request.publicKey = {};
-      // TODO
+      if (this.reqRpid) {
+        request.publicKey.rpid = this.reqRpid;
+      }
+      request.publicKey.allowCredentials = [];
+      for (let i = 0; i < this.reqAllowCredentials.length; i++) {
+        let exist = false;
+        let allowCredenial = this.reqAllowCredentials[i];
+        let credentials = {};
+        if (allowCredenial.id) {
+          credentials.id = Uint8Array.from(atob(allowCredenial.id), c =>
+            c.charCodeAt(0)
+          );
+          exist = true;
+        }
+        if (allowCredenial.type) {
+          credentials.type = allowCredenial.type;
+          exist = true;
+        }
+        if (exist) {
+          request.publicKey.allowCredenials.push(credentials);
+        }
+      }
+      if (this.reqUserVerification) {
+        request.publicKey.userVerification = this.reqUserVerification;
+      }
+      request.publicKey.timeout = this.reqTimeout;
+      request.publicKey.challenge = this.reqChallenge;
       return request;
     },
-    createResponseRawId: function() {
-      return new Int8Array(this.createResponse.rawId);
+    getResponseRawId: function() {
+      return new Int8Array(this.getResponse.rawId);
     },
-    createResponseResponseAttestationObjectFmt: function() {
-      if (this.createResponse.response == undefined) {
-        return "";
-      }
-      var cbor = require("cbor");
-      return cbor.decodeAllSync(
-        new Buffer(this.createResponse.response.attestationObject)
-      )[0].fmt;
-    },
-    createResponseResponseAttestationObjectAttStmt: function() {
-      if (this.createResponse.response == undefined) {
-        return "";
-      }
-      var cbor = require("cbor");
-      return cbor.decodeAllSync(
-        new Buffer(this.createResponse.response.attestationObject)
-      )[0].attStmt;
-    },
-    createResponseResponseAttestationObjectAuthDataForView: function() {
-      if (this.createResponse.response == undefined) {
-        return "";
-      }
-      console.log(this.createResponse.response);
-      var cbor = require("cbor");
-      var authDataArray = cbor.decodeAllSync(
-        new Buffer(this.createResponse.response.attestationObject)
-      )[0].authData;
+    getResponseView: function() {
+      var responseView = {};
+      responseView.flag = {};
+      console.log("RESULT1", responseView);
 
-      // parse authDataArray https://www.w3.org/TR/webauthn/#authenticator-data
-      const rpidHash = authDataArray.slice(0, 32);
-      const flag = authDataArray.slice(32, 33); //.readUInt8(0)
-      const signCountArray = authDataArray.slice(33, 37);
-      const clength = signCountArray.length;
-      const cbuffer = Buffer.from(signCountArray);
-      const signCount = cbuffer.readUIntBE(0, clength);
-
-      const length = flag.length;
-      const buffer = Buffer.from(flag);
-      const result = buffer.readUIntBE(0, length);
-      const up = 1 == result.toString(2)[0];
-      const uv = 1 == result.toString(2)[2];
-      const at = 1 == result.toString(2)[6];
-      const ed = 1 == result.toString(2)[7];
-
-      let aaguid;
-      let credentialId;
-      let credentialPublicKey;
-      if (at) {
-        aaguid = Buffer.from(authDataArray.slice(37, 53)).toString("hex");
-        const credentialIdLengthTmp = authDataArray.slice(53, 55);
-        const credentialIdLength =
-          (credentialIdLengthTmp[0] << 8) + credentialIdLengthTmp[1];
-        credentialId = btoa(
-          String.fromCharCode(
-            ...authDataArray.slice(55, 55 + credentialIdLength)
-          )
+      responseView.id = this.getResponse.id;
+      if (this.getResponse.response != undefined) {
+        let authDataArray = new Uint8Array(
+          this.getResponse.response.authenticatorData
         );
-        credentialPublicKey = btoa(
-          String.fromCharCode(...authDataArray.slice(55 + credentialIdLength))
-        );
+        const rpidHash = authDataArray.slice(0, 32);
+        responseView.rpidHash = Buffer.from(rpidHash).toString("hex");
+        const flag = authDataArray.slice(32, 33); //.readUInt8(0)
+        const signCountArray = authDataArray.slice(33, 37);
+        const clength = signCountArray.length;
+        const cbuffer = Buffer.from(signCountArray);
+        const signCount = cbuffer.readUIntBE(0, clength);
+        responseView.signCount = signCount;
+        const length = flag.length;
+        const buffer = Buffer.from(flag);
+        const result = buffer.readUIntBE(0, length);
+        const up = 1 == result.toString(2)[0];
+        const uv = 1 == result.toString(2)[2];
+        const at = 1 == result.toString(2)[6];
+        const ed = 1 == result.toString(2)[7];
+        responseView.flag.up = up;
+        responseView.flag.uv = uv;
+        responseView.flag.at = at;
+        responseView.flag.ed = ed;
       }
-
-      // TODO Extension data
-      return {
-        rpidHash: Buffer.from(rpidHash).toString("hex"),
-        flag: {
-          up: up,
-          uv: uv,
-          at: at,
-          ed: ed
-        },
-        signCount: signCount,
-        aaguid: aaguid,
-        credentialId: credentialId,
-        credentialPublicKey: credentialPublicKey
-      };
+      // https://webauthn.guide/
+      // TODO signature
+      // TODO userhandle
+      return responseView;
     },
-    createResponseResponseAttestationObjectExtension: function() {
+    getResponseResponseAttestationObjectExtension: function() {
       return require("cbor").decodeAllSync(
-        new Buffer(this.createResponse.response.extensions)
+        new Buffer(this.getResponse.response.extensions)
       )[0];
     },
-    createResponseResponseClientDataJSON: function() {
-      if (this.createResponse.response == undefined) {
+    getResponseResponseClientDataJSON: function() {
+      if (this.getResponse.response == undefined) {
         return "";
       }
       var enc = new TextDecoder("utf-8");
-      return enc.decode(this.createResponse.response.clientDataJSON);
+      return enc.decode(this.getResponse.response.clientDataJSON);
     },
-    createResponseId: function() {
-      return this.createResponse.id;
+    getResponseId: function() {
+      return this.getResponse.id;
     },
-    createResponseType: function() {
-      return this.createResponse.type;
+    getResponseType: function() {
+      return this.getResponse.type;
     }
   },
   methods: {
@@ -317,7 +359,7 @@ export default {
       // call webauthn api
       console.log(this.buildGetRequest);
       navigator.credentials
-        .create(this.buildGetRequest)
+        .get(this.buildGetRequest)
         .then(res => {
           console.log(res);
           this.getResponse = res;
