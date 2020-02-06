@@ -591,18 +591,16 @@ export default {
       // parse authDataArray https://www.w3.org/TR/webauthn/#authenticator-data
       const rpidHash = authDataArray.slice(0, 32);
       const flag = authDataArray.slice(32, 33); //.readUInt8(0)
-      const signCountArray = authDataArray.slice(33, 37);
-      const clength = signCountArray.length;
-      const cbuffer = Buffer.from(signCountArray);
-      const signCount = cbuffer.readUIntBE(0, clength);
-
-      const length = flag.length;
-      const buffer = Buffer.from(flag);
-      const result = buffer.readUIntBE(0, length);
-      const up = 1 == result.toString(2)[0];
-      const uv = 1 == result.toString(2)[2];
-      const at = 1 == result.toString(2)[6];
-      const ed = 1 == result.toString(2)[7];
+      const signCount =
+        (authDataArray[33] << 24) |
+        (authDataArray[34] << 16) |
+        (authDataArray[35] << 8) |
+        authDataArray[36];
+        console.log(flag)
+        const up = Boolean(flag & 0x01)
+        const uv = Boolean(flag & 0x04)
+        const at = Boolean(flag & 0x64)
+        const ed = Boolean(flag & 0x128)
 
       let aaguid;
       let credentialId;
