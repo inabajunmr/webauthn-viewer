@@ -70,7 +70,7 @@
               </div>
             </div>
           </div>
-          <label class="label is-small">.id(Base64 encoded)</label>
+          <label class="label is-small">.id(hex)</label>
           <div class="control">
             <input
               class="input is-small"
@@ -150,13 +150,13 @@
           <tbody>
             <tr>
               <th>Error</th>
-              <td style="word-wrap: break-word">
+              <td style="word-wrap: break-word" class="has-text-danger">
                 {{ errorType }}
               </td>
             </tr>
             <tr>
               <th>Error message</th>
-              <td style="word-wrap: break-word">
+              <td style="word-wrap: break-word" class="has-text-danger">
                 {{ errorMessage }}
               </td>
             </tr>
@@ -173,7 +173,7 @@
             <tr>
               <th style="padding-left: 20px">.clientDataJSON</th>
               <td style="word-wrap: break-word">
-                {{ getResponseResponseClientDataJSON }}
+                {{ getResponseView.clientDataJSON }}
               </td>
             </tr>
             <tr>
@@ -183,53 +183,49 @@
             <tr>
               <th style="padding-left: 40px">.rpidHash</th>
               <td style="word-wrap: break-word">
-                {{ getResponseView.rpidHash }}
+                {{ getResponseView.rpIdHash }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 40px">.flag.up</th>
               <td>
-                {{
-                  getResponseView.flag == undefined
-                    ? ""
-                    : getResponseView.flag.up
-                }}
+                {{ getResponseView.up }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 40px">.flag.uv</th>
               <td>
-                {{
-                  getResponseView.flag == undefined
-                    ? ""
-                    : getResponseView.flag.uv
-                }}
+                {{ getResponseView.uv }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 40px">.flag.at</th>
               <td>
-                {{
-                  getResponseView.flag == undefined
-                    ? ""
-                    : getResponseView.flag.at
-                }}
+                {{ getResponseView.at }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 40px">.flag.ed</th>
               <td>
-                {{
-                  getResponseView.flag == undefined
-                    ? ""
-                    : getResponseView.flag.ed
-                }}
+                {{ getResponseView.ed }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 40px">.signCount</th>
               <td>
                 {{ getResponseView.signCount }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 20px">.userHandle</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.userHandle }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 20px">.signature</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.signature }}
               </td>
             </tr>
           </tbody>
@@ -272,9 +268,7 @@ export default {
         let allowCredenial = this.reqAllowCredentials[i];
         let credentials = {};
         if (allowCredenial.id) {
-          credentials.id = Uint8Array.from(atob(allowCredenial.id), c =>
-            c.charCodeAt(0)
-          );
+          credentials.id = Buffer.from(allowCredenial.id, "hex");
           exist = true;
         }
         if (allowCredenial.type) {
@@ -282,7 +276,7 @@ export default {
           exist = true;
         }
         if (exist) {
-          request.publicKey.allowCredenials.push(credentials);
+          request.publicKey.allowCredentials.push(credentials);
         }
       }
       if (this.reqUserVerification) {
@@ -294,40 +288,6 @@ export default {
     },
     getResponseRawId: function() {
       return new Int8Array(this.getResponse.rawId);
-    },
-    getResponseView: function() {
-      var responseView = {};
-      responseView.flag = {};
-
-      responseView.id = this.getResponse.id;
-      if (this.getResponse.response != undefined) {
-        let authDataArray = new Uint8Array(
-          this.getResponse.response.authenticatorData
-        );
-
-        const rpidHash = authDataArray.slice(0, 32);
-        responseView.rpidHash = Buffer.from(rpidHash).toString("hex");
-        const flag = authDataArray.slice(32, 33); //.readUInt8(0)
-        const signCount =
-          (authDataArray[33] << 24) |
-          (authDataArray[34] << 16) |
-          (authDataArray[35] << 8) |
-          authDataArray[36];
-        responseView.signCount = signCount;
-
-        const up = Boolean(flag & 0x01)
-        const uv = Boolean(flag & 0x04)
-        const at = Boolean(flag & 0x64)
-        const ed = Boolean(flag & 0x128)
-        responseView.flag.up = up;
-        responseView.flag.uv = uv;
-        responseView.flag.at = at;
-        responseView.flag.ed = ed;
-      }
-      // https://webauthn.guide/
-      // TODO signature
-      // TODO userhandle
-      return responseView;
     },
     getResponseResponseAttestationObjectExtension: function() {
       return require("cbor").decodeAllSync(
@@ -346,6 +306,113 @@ export default {
     },
     getResponseType: function() {
       return this.getResponse.type;
+    },
+    getResponseView: function() {
+      // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
+      let result = {};
+      result.id = this.getResponse.id;
+      result.type = this.getResponse.type;
+      if (this.getResponse.response) {
+        /** clientDataJSON */
+        let enc = new TextDecoder("utf-8");
+        result.clientDataJSON = enc.decode(
+          this.getResponse.response.clientDataJSON
+        );
+
+        /** attestationObject */
+        // const cbor      = require('cbor');
+        const vanillacbor = require("vanillacbor");
+
+        let buffer = Buffer.from(
+          this.getResponse.response.authenticatorData,
+          "base64"
+        );
+        let rpIdHash = buffer.slice(0, 32);
+        buffer = buffer.slice(32);
+        result.authData = {};
+        result.rpIdHash = rpIdHash.toString("hex");
+
+        /* Flags */
+        let flagsBuffer = buffer.slice(0, 1);
+        buffer = buffer.slice(1);
+        let flagsInt = flagsBuffer[0];
+        result.up = !!(flagsInt & 0x01); // Test of User Presence
+        result.uv = !!(flagsInt & 0x04); // User Verification
+        result.at = !!(flagsInt & 0x40); // Attestation data
+        result.ed = !!(flagsInt & 0x80); // Extension data
+
+        result.signCount =
+          (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3];
+        buffer = buffer.slice(4);
+
+        /* Attested credential data */
+        let aaguid = undefined;
+        let aaguidBuffer = undefined;
+        let credIdBuffer = undefined;
+        let cosePublicKeyBuffer = undefined;
+        let attestationMinLen = 16 + 2 + 16 + 77; // aaguid + credIdLen + credId + pk
+
+        if (result.at) {
+          // Attested Data
+          if (buffer.byteLength < attestationMinLen)
+            throw new Error(
+              `It seems as the Attestation Data flag is set, but the remaining data is smaller than ${attestationMinLen} bytes. You might have set AT flag for the assertion response.`
+            );
+
+          aaguid = buffer.slice(0, 16).toString("hex");
+          buffer = buffer.slice(16);
+          aaguidBuffer = `${aaguid.slice(0, 8)}-${aaguid.slice(
+            8,
+            12
+          )}-${aaguid.slice(12, 16)}-${aaguid.slice(16, 20)}-${aaguid.slice(
+            20
+          )}`;
+          result.aaguid = aaguidBuffer;
+
+          let credIdLenBuffer = buffer.slice(0, 2);
+          buffer = buffer.slice(2);
+          let credIdLen = credIdLenBuffer.readUInt16BE(0);
+          credIdBuffer = buffer.slice(0, credIdLen);
+          buffer = buffer.slice(credIdLen);
+          result.credentialId = credIdBuffer.toString("hex");
+
+          let pubKeyLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
+          cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
+          buffer = buffer.slice(pubKeyLength);
+          result.credentialPublicKey = cosePublicKeyBuffer.toString("hex");
+        }
+
+        let coseExtensionsDataBuffer = undefined;
+        if (result.ed) {
+          // Extension Data
+          let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
+            .byteLength;
+
+          coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
+          buffer = buffer.slice(extensionsDataLength);
+          result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
+            "hex"
+          );
+        }
+
+        if (buffer.byteLength)
+          throw new Error(
+            "Failed to decode authData! Leftover bytes been detected!"
+          );
+
+        result.userHandle = Array.prototype.map
+          .call(new Uint8Array(this.getResponse.response.userHandle), x =>
+            ("00" + x.toString(16)).slice(-2)
+          )
+          .join("");
+        result.signature = Array.prototype.map
+          .call(new Uint8Array(this.getResponse.response.signature), x =>
+            ("00" + x.toString(16)).slice(-2)
+          )
+          .join("");
+      }
+
+      return result;
     }
   },
   methods: {
@@ -356,15 +423,15 @@ export default {
       this.getResponse = {};
 
       // call webauthn api
-      console.log(this.buildGetRequest);
+      console.log("Get Request", this.buildGetRequest);
       navigator.credentials
         .get(this.buildGetRequest)
         .then(res => {
-          console.log(res);
+          console.log("Get Response", res);
           this.getResponse = res;
         })
         .catch(err => {
-          console.log(err);
+          console.log("Get Error", err);
           this.errorType = err.name;
           this.errorMessage = err.message;
         });
@@ -378,7 +445,7 @@ export default {
       return this.reqChallenge;
     },
     addAllowCredentials() {
-      this.reqAllowCredentials.push({ transports: [] });
+      this.reqAllowCredentials.push({ type: "public-key", transports: [] });
     }
   }
 };

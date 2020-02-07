@@ -43,11 +43,12 @@
           </div>
         </div>
         <div class="field">
-          <label class="label is-small">user.id(Base64 encoded)</label>
+          <label class="label is-small">user.id(hex)</label>
           <div class="columns">
             <div class="column">
               <div class="control">
                 <input
+                  disabled
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
@@ -285,11 +286,12 @@
           />
         </div>
         <div class="field">
-          <label class="label is-small">challenge(Base64 encoded)</label>
+          <label class="label is-small">challenge(hex)</label>
           <div class="columns">
             <div class="column">
               <div class="control">
                 <input
+                  disabled
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
@@ -323,13 +325,13 @@
           <tbody>
             <tr>
               <th>Error</th>
-              <td style="word-wrap: break-word">
+              <td style="word-wrap: break-word" class="has-text-danger">
                 {{ errorType }}
               </td>
             </tr>
             <tr>
               <th>Error message</th>
-              <td style="word-wrap: break-word">
+              <td style="word-wrap: break-word" class="has-text-danger">
                 {{ errorMessage }}
               </td>
             </tr>
@@ -354,73 +356,55 @@
             <tr>
               <th style="padding-left: 60px">.rpidHash</th>
               <td style="word-wrap: break-word">
-                {{
-                  createResponseView.rpidHash
-                }}
+                {{ createResponseView.rpidHash }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.flag.up</th>
               <td>
-                {{
-                  createResponseView.up
-                }}
+                {{ createResponseView.up }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.flag.uv</th>
               <td>
-                {{
-                  createResponseView.uv
-                }}
+                {{ createResponseView.uv }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.flag.at</th>
               <td>
-                {{
-                  createResponseView.at
-                }}
+                {{ createResponseView.at }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.flag.ed</th>
               <td>
-                {{
-                  createResponseView.ed
-                }}
+                {{ createResponseView.ed }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.signCount</th>
               <td>
-                {{
-                  createResponseView.signCount
-                }}
+                {{ createResponseView.signCount }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.aaguid</th>
               <td>
-                {{
-                  createResponseView.aaguid
-                }}
+                {{ createResponseView.aaguid }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.credentialId</th>
               <td style="word-wrap: break-word">
-                {{
-                  createResponseView.credentialId
-                }}
+                {{ createResponseView.credentialId }}
               </td>
             </tr>
             <tr>
               <th style="padding-left: 60px">.credentialPublicKey</th>
               <td style="word-wrap: break-word">
-                {{
-                  createResponseView.credentialPublicKey
-                }}
+                {{ createResponseView.credentialPublicKey }}
               </td>
             </tr>
             <tr>
@@ -473,15 +457,15 @@ export default {
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqExcludeCredentials: [],
-      createResponse: {},
+      createResponse: {}
     };
   },
   computed: {
     useridForView: function() {
-      return btoa(String.fromCharCode(...this.reqUserId));
+      return this.reqUserId.toString("hex");
     },
     challengeForView: function() {
-      return btoa(String.fromCharCode(...this.reqChallenge));
+      return this.reqChallenge.toString("hex");
     },
     buildCreateRequest: function() {
       let request = {};
@@ -536,81 +520,102 @@ export default {
     },
     createResponseView: function() {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
-      let result = {}
-      result.id = this.createResponse.id
-      result.type = this.createResponse.type
-      if (this.createResponse.response){
+      let result = {};
+      result.id = this.createResponse.id;
+      result.type = this.createResponse.type;
+      if (this.createResponse.response) {
         /** clientDataJSON */
         let enc = new TextDecoder("utf-8");
-        result.clientDataJSON = enc.decode(this.createResponse.response.clientDataJSON);
+        result.clientDataJSON = enc.decode(
+          this.createResponse.response.clientDataJSON
+        );
 
         /** attestationObject */
-        const cbor      = require('cbor');
-        const vanillacbor   = require('vanillacbor');
+        const cbor = require("cbor");
+        const vanillacbor = require("vanillacbor");
 
         let attestationObject = cbor.decodeAllSync(
           new Buffer(this.createResponse.response.attestationObject)
         )[0];
-        result.fmt = attestationObject.fmt
-        result.attStmt = attestationObject.attStmt
+        result.fmt = attestationObject.fmt;
+        result.attStmt = attestationObject.attStmt;
 
-        let buffer = attestationObject.authData
-        let rpIdHash      = buffer.slice(0, 32);             buffer = buffer.slice(32);
-        result.authData = {}
-        result.rpIdHash = rpIdHash.toString('hex')
+        let buffer = attestationObject.authData;
+        let rpIdHash = buffer.slice(0, 32);
+        buffer = buffer.slice(32);
+        result.authData = {};
+        result.rpIdHash = rpIdHash.toString("hex");
 
         /* Flags */
-        let flagsBuffer   = buffer.slice(0, 1);              buffer = buffer.slice(1);
-        let flagsInt      = flagsBuffer[0];
-        result.up            = !!(flagsInt & 0x01); // Test of User Presence
-        result.uv            = !!(flagsInt & 0x04); // User Verification
-        result.at            = !!(flagsInt & 0x40); // Attestation data
-        result.ed            = !!(flagsInt & 0x80); // Extension data
+        let flagsBuffer = buffer.slice(0, 1);
+        buffer = buffer.slice(1);
+        let flagsInt = flagsBuffer[0];
+        result.up = !!(flagsInt & 0x01); // Test of User Presence
+        result.uv = !!(flagsInt & 0x04); // User Verification
+        result.at = !!(flagsInt & 0x40); // Attestation data
+        result.ed = !!(flagsInt & 0x80); // Extension data
 
-        let counterBuffer = buffer.slice(0, 4);               buffer = buffer.slice(4);
-        result.signCount       = counterBuffer.readUInt32BE(0);
+        let counterBuffer = buffer.slice(0, 4);
+        buffer = buffer.slice(4);
+        result.signCount = counterBuffer.readUInt32BE(0);
 
         /* Attested credential data */
-        let aaguid              = undefined;
-        let aaguidBuffer        = undefined;
-        let credIdBuffer        = undefined;
+        let aaguid = undefined;
+        let aaguidBuffer = undefined;
+        let credIdBuffer = undefined;
         let cosePublicKeyBuffer = undefined;
-        let attestationMinLen   = 16 + 2 + 16 + 77; // aaguid + credIdLen + credId + pk
+        let attestationMinLen = 16 + 2 + 16 + 77; // aaguid + credIdLen + credId + pk
 
-        if(result.at) { // Attested Data
-            if(buffer.byteLength < attestationMinLen)
-                throw new Error(`It seems as the Attestation Data flag is set, but the remaining data is smaller than ${attestationMinLen} bytes. You might have set AT flag for the assertion response.`)
+        if (result.at) {
+          // Attested Data
+          if (buffer.byteLength < attestationMinLen)
+            throw new Error(
+              `It seems as the Attestation Data flag is set, but the remaining data is smaller than ${attestationMinLen} bytes. You might have set AT flag for the assertion response.`
+            );
 
-            aaguid              = buffer.slice(0, 16).toString('hex'); buffer = buffer.slice(16);
-            aaguidBuffer        = `${aaguid.slice(0, 8)}-${aaguid.slice(8, 12)}-${aaguid.slice(12, 16)}-${aaguid.slice(16, 20)}-${aaguid.slice(20)}`;
-            result.aaguid = aaguidBuffer
+          aaguid = buffer.slice(0, 16).toString("hex");
+          buffer = buffer.slice(16);
+          aaguidBuffer = `${aaguid.slice(0, 8)}-${aaguid.slice(
+            8,
+            12
+          )}-${aaguid.slice(12, 16)}-${aaguid.slice(16, 20)}-${aaguid.slice(
+            20
+          )}`;
+          result.aaguid = aaguidBuffer;
 
-            let credIdLenBuffer = buffer.slice(0, 2);                  buffer = buffer.slice(2);
-            let credIdLen       = credIdLenBuffer.readUInt16BE(0);
-            credIdBuffer        = buffer.slice(0, credIdLen);          buffer = buffer.slice(credIdLen);
-            result.credentialId = credIdBuffer.toString('hex')
+          let credIdLenBuffer = buffer.slice(0, 2);
+          buffer = buffer.slice(2);
+          let credIdLen = credIdLenBuffer.readUInt16BE(0);
+          credIdBuffer = buffer.slice(0, credIdLen);
+          buffer = buffer.slice(credIdLen);
+          result.credentialId = credIdBuffer.toString("hex");
 
-            let pubKeyLength    = vanillacbor.decodeOnlyFirst(buffer).byteLength;
-            cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);       buffer = buffer.slice(pubKeyLength);
-            result.credentialPublicKey = cosePublicKeyBuffer.toString('hex')
+          let pubKeyLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
+          cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
+          buffer = buffer.slice(pubKeyLength);
+          result.credentialPublicKey = cosePublicKeyBuffer.toString("hex");
         }
 
         let coseExtensionsDataBuffer = undefined;
-        if(result.ed) { // Extension Data
-            let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
+        if (result.ed) {
+          // Extension Data
+          let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
+            .byteLength;
 
-            coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength); buffer = buffer.slice(extensionsDataLength);
-            result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString('hex')
+          coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
+          buffer = buffer.slice(extensionsDataLength);
+          result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
+            "hex"
+          );
         }
 
-        if(buffer.byteLength)
-            throw new Error('Failed to decode authData! Leftover bytes been detected!');
+        if (buffer.byteLength)
+          throw new Error(
+            "Failed to decode authData! Leftover bytes been detected!"
+          );
+      }
 
-      }      
-
-      console.log(result)
-      return result
-
+      return result;
     }
   },
   methods: {
@@ -621,16 +626,15 @@ export default {
       this.createResponse = {};
 
       // call webauthn api
-      console.log(this.buildCreateRequest);
+      console.log("Create Request", this.buildCreateRequest);
       navigator.credentials
         .create(this.buildCreateRequest)
         .then(res => {
-          console.log(res);
+          console.log("Create Response", res);
           this.createResponse = res;
-          this.createResponseView // TODO remove
         })
         .catch(err => {
-          console.log(err);
+          console.log("Create Error", err);
           this.errorType = err.name;
           this.errorMessage = err.message;
         });
