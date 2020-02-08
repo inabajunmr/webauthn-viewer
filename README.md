@@ -1,4 +1,8 @@
-# client
+# webauthn-viewer
+
+WebAuthn response viewer for learning.
+
+https://inabajunmr.github.io/webauthn-viewer/
 
 ## Project setup
 ```
