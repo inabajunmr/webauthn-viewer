@@ -443,7 +443,7 @@ export default {
       errorType: "",
       errorMessage: "",
       reqRpName: "Acme",
-      reqRpId: window.location.hostname,
+      reqRpid: window.location.hostname,
       reqRpIcon: "",
       reqUserId: this.generateRandomUserId(),
       reqUserName: "john.p.smith@example.com",
@@ -472,7 +472,7 @@ export default {
       request.publicKey = {};
       request.publicKey.rp = {};
       request.publicKey.rp.name = this.reqRpName;
-      request.publicKey.rp.id = this.reqRpId;
+      request.publicKey.rp.id = this.reqRpid;
       request.publicKey.rp.icon = this.reqRpIcon;
       request.publicKey.user = {};
       request.publicKey.user.id = this.reqUserId;
