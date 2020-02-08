@@ -25,7 +25,7 @@
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="reqRpId"
+                  v-model="reqRpid"
                 />
               </div>
             </div>
@@ -544,7 +544,7 @@ export default {
         let rpIdHash = buffer.slice(0, 32);
         buffer = buffer.slice(32);
         result.authData = {};
-        result.rpIdHash = rpIdHash.toString("hex");
+        result.rpidHash = rpIdHash.toString("hex");
 
         /* Flags */
         let flagsBuffer = buffer.slice(0, 1);

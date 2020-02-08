@@ -12,6 +12,7 @@
     "buefy": "^0.8.10",
     "cbor": "^5.0.1",
     "core-js": "^3.4.4",
+    "vanillacbor": "git+https://github.com/herrjemand/vanillaCBOR.git",
     "vue": "^2.6.10"
   },
   "devDependencies": {
