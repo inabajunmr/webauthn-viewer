@@ -11,7 +11,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="rp.name"
                   v-model="reqRpName"
                 />
               </div>
@@ -24,7 +24,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="rp.id"
                   v-model="reqRpid"
                 />
               </div>
@@ -37,7 +37,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="https://example/rp.png"
               v-model="reqRpIcon"
             />
           </div>
@@ -50,7 +50,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="user.id"
                   v-model="reqUserId"
                 />
               </div>
@@ -73,7 +73,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="user.name"
                   v-model="reqUserName"
                 />
               </div>
@@ -86,7 +86,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="user.displayName"
                   v-model="reqUserDisplayName"
                 />
               </div>
@@ -99,7 +99,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="https://example/rp.png"
               v-model="reqUserIcon"
             />
           </div>
@@ -117,7 +117,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="public-key"
                   v-model="pubKeyCredParam.type"
                 />
               </div>
@@ -128,7 +128,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="-7"
                   v-model="pubKeyCredParam.alg"
                 />
               </div>
@@ -151,7 +151,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="none or direct or indirect"
                   v-model="reqAttestation"
                 />
               </div>
@@ -164,7 +164,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="60000"
                   v-model="reqTimeout"
                 />
               </div>
@@ -179,7 +179,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="platform or closs-platform"
               v-model="reqAuthenticatorSectionAuthenticationAttachment"
             />
           </div>
@@ -192,7 +192,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="true"
               v-model="reqAuthenticatorSectionRequireResidentKey"
             />
           </div>
@@ -205,7 +205,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="preferred"
               v-model="reqAuthenticatorSectionUserVerification"
             />
           </div>
@@ -223,7 +223,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="public-key"
                   v-model="excludeCredential.type"
                 />
               </div>
@@ -271,7 +271,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="id"
               v-model="excludeCredential.id"
             />
           </div>
@@ -292,7 +292,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="challenge"
                   v-model="this.reqChallenge"
                 />
               </div>
@@ -448,9 +448,9 @@ export default {
       reqUserIcon: "",
       reqUserDisplayName: "John P. Smith",
       reqPubKeyCredParams: [{ type: "public-key", alg: -7 }],
-      reqAuthenticatorSectionAuthenticationAttachment: "cross-platform",
+      reqAuthenticatorSectionAuthenticationAttachment: "",
       reqAuthenticatorSectionRequireResidentKey: false,
-      reqAuthenticatorSectionUserVerification: "required",
+      reqAuthenticatorSectionUserVerification: "preferred",
       reqAttestation: "direct",
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),

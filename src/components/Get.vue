@@ -245,7 +245,7 @@ export default {
       reqAllowCredentials: [],
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
-      reqUserVerification: "",
+      reqUserVerification: false,
       createResult: "",
       resResponseClientDataJSON: "",
       getResponse: {},
@@ -287,7 +287,7 @@ export default {
         request.publicKey.userVerification = this.reqUserVerification;
       }
       request.publicKey.timeout = this.reqTimeout;
-      request.publicKey.challenge = this.reqChallenge;
+      request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
       return request;
     },
     getResponseRawId: function() {
@@ -440,12 +440,10 @@ export default {
           this.errorMessage = err.message;
         });
     },
-    generateRandomUserId() {
-      this.reqUserId = require("crypto").randomBytes(32);
-      return this.reqUserId;
-    },
     generateChallenge() {
-      this.reqChallenge = require("crypto").randomBytes(32);
+      this.reqChallenge = require("crypto")
+        .randomBytes(32)
+        .toString("hex");
       return this.reqChallenge;
     },
     addAllowCredentials() {
