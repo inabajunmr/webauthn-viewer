@@ -48,11 +48,10 @@
             <div class="column">
               <div class="control">
                 <input
-                  disabled
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="useridForView"
+                  v-model="reqUserId"
                 />
               </div>
             </div>
@@ -105,7 +104,7 @@
             />
           </div>
         </div>
-        <label class="label is-small">excludeCredentials[]</label>
+        <label class="label is-small">pubKeyCredParams[]</label>
         <div
           class="field box"
           v-for="pubKeyCredParam in reqPubKeyCredParams"
@@ -267,7 +266,7 @@
               </div>
             </div>
           </div>
-          <label class="label is-small">.id(Base64 encoded)</label>
+          <label class="label is-small">.id(hex)</label>
           <div class="control">
             <input
               class="input is-small"
@@ -291,11 +290,10 @@
             <div class="column">
               <div class="control">
                 <input
-                  disabled
                   class="input is-small"
                   type="text"
                   placeholder="Text input"
-                  v-model="challengeForView"
+                  v-model="this.reqChallenge"
                 />
               </div>
             </div>
@@ -461,12 +459,6 @@ export default {
     };
   },
   computed: {
-    useridForView: function() {
-      return this.reqUserId.toString("hex");
-    },
-    challengeForView: function() {
-      return this.reqChallenge.toString("hex");
-    },
     buildCreateRequest: function() {
       let request = {};
       request.publicKey = {};
@@ -475,7 +467,7 @@ export default {
       request.publicKey.rp.id = this.reqRpid;
       request.publicKey.rp.icon = this.reqRpIcon;
       request.publicKey.user = {};
-      request.publicKey.user.id = this.reqUserId;
+      request.publicKey.user.id = Buffer.from(this.reqUserId, "hex");
       request.publicKey.user.name = this.reqUserName;
       request.publicKey.user.icon = this.reqUserIcon;
       request.publicKey.user.displayName = this.reqUserDisplayName;
@@ -495,7 +487,7 @@ export default {
       }
       request.publicKey.attestation = this.reqAttestation;
       request.publicKey.timeout = this.reqTimeout;
-      request.publicKey.challenge = this.reqChallenge;
+      request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
 
       request.publicKey.excludeCredentials = [];
       for (let i = 0; i < this.reqExcludeCredentials.length; i++) {
@@ -503,9 +495,7 @@ export default {
         let excludeCredential = this.reqExcludeCredentials[i];
         let credentials = {};
         if (excludeCredential.id) {
-          credentials.id = Uint8Array.from(atob(excludeCredential.id), c =>
-            c.charCodeAt(0)
-          );
+          credentials.id = Buffer.from(excludeCredential.id, "hex");
           exist = true;
         }
         if (excludeCredential.type) {
@@ -640,11 +630,15 @@ export default {
         });
     },
     generateRandomUserId() {
-      this.reqUserId = require("crypto").randomBytes(32);
+      this.reqUserId = require("crypto")
+        .randomBytes(32)
+        .toString("hex");
       return this.reqUserId;
     },
     generateChallenge() {
-      this.reqChallenge = require("crypto").randomBytes(32);
+      this.reqChallenge = require("crypto")
+        .randomBytes(32)
+        .toString("hex");
       return this.reqChallenge;
     },
     addExcludeCredentials() {
