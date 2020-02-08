@@ -9,7 +9,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="rp.id"
               v-model="reqRpid"
             />
           </div>
@@ -27,7 +27,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="public-key"
                   v-model="allowCredential.type"
                 />
               </div>
@@ -75,7 +75,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="id"
               v-model="allowCredential.id"
             />
           </div>
@@ -95,7 +95,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="60000"
               v-model="reqTimeout"
             />
           </div>
@@ -106,7 +106,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="Text input"
+              placeholder="preferred"
               v-model="reqUserVerification"
             />
           </div>
@@ -119,7 +119,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="Text input"
+                  placeholder="challenge"
                   v-model="challengeForView"
                 />
               </div>
