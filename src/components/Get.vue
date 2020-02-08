@@ -112,7 +112,7 @@
           </div>
         </div>
         <div class="field">
-          <label class="label is-small">challenge(Base64 encoded)</label>
+          <label class="label is-small">challenge(hex)</label>
           <div class="columns">
             <div class="column">
               <div class="control">
@@ -254,7 +254,7 @@ export default {
   },
   computed: {
     challengeForView: function() {
-      return btoa(String.fromCharCode(...this.reqChallenge));
+      return this.reqChallenge.toString("hex");
     },
     buildGetRequest: function() {
       let request = {};
