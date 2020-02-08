@@ -275,6 +275,10 @@ export default {
           credentials.type = allowCredenial.type;
           exist = true;
         }
+        if (allowCredenial.transports) {
+          credentials.transports = allowCredenial.transports;
+          exist = true;
+        }
         if (exist) {
           request.publicKey.allowCredentials.push(credentials);
         }
