@@ -290,27 +290,6 @@ export default {
       request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
       return request;
     },
-    getResponseRawId: function() {
-      return new Int8Array(this.getResponse.rawId);
-    },
-    getResponseResponseAttestationObjectExtension: function() {
-      return require("cbor").decodeAllSync(
-        new Buffer(this.getResponse.response.extensions)
-      )[0];
-    },
-    getResponseResponseClientDataJSON: function() {
-      if (this.getResponse.response == undefined) {
-        return "";
-      }
-      var enc = new TextDecoder("utf-8");
-      return enc.decode(this.getResponse.response.clientDataJSON);
-    },
-    getResponseId: function() {
-      return this.getResponse.id;
-    },
-    getResponseType: function() {
-      return this.getResponse.type;
-    },
     getResponseView: function() {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};
@@ -340,69 +319,25 @@ export default {
         let flagsBuffer = buffer.slice(0, 1);
         buffer = buffer.slice(1);
         let flagsInt = flagsBuffer[0];
-        result.up = !!(flagsInt & 0x01); // Test of User Presence
-        result.uv = !!(flagsInt & 0x04); // User Verification
-        result.at = !!(flagsInt & 0x40); // Attestation data
-        result.ed = !!(flagsInt & 0x80); // Extension data
+        result.up = !!(flagsInt & 0x01);
+        result.uv = !!(flagsInt & 0x04);
+        result.at = !!(flagsInt & 0x40);
+        result.ed = !!(flagsInt & 0x80);
 
         result.signCount =
           (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3];
         buffer = buffer.slice(4);
 
-        /* Attested credential data */
-        let aaguid = undefined;
-        let aaguidBuffer = undefined;
-        let credIdBuffer = undefined;
-        let cosePublicKeyBuffer = undefined;
-        let attestationMinLen = 16 + 2 + 16 + 77; // aaguid + credIdLen + credId + pk
-
-        if (result.at) {
-          // Attested Data
-          if (buffer.byteLength < attestationMinLen)
-            throw new Error(
-              `It seems as the Attestation Data flag is set, but the remaining data is smaller than ${attestationMinLen} bytes. You might have set AT flag for the assertion response.`
-            );
-
-          aaguid = buffer.slice(0, 16).toString("hex");
-          buffer = buffer.slice(16);
-          aaguidBuffer = `${aaguid.slice(0, 8)}-${aaguid.slice(
-            8,
-            12
-          )}-${aaguid.slice(12, 16)}-${aaguid.slice(16, 20)}-${aaguid.slice(
-            20
-          )}`;
-          result.aaguid = aaguidBuffer;
-
-          let credIdLenBuffer = buffer.slice(0, 2);
-          buffer = buffer.slice(2);
-          let credIdLen = credIdLenBuffer.readUInt16BE(0);
-          credIdBuffer = buffer.slice(0, credIdLen);
-          buffer = buffer.slice(credIdLen);
-          result.credentialId = credIdBuffer.toString("hex");
-
-          let pubKeyLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
-          cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
-          buffer = buffer.slice(pubKeyLength);
-          result.credentialPublicKey = cosePublicKeyBuffer.toString("hex");
-        }
-
-        let coseExtensionsDataBuffer = undefined;
         if (result.ed) {
-          // Extension Data
           let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
             .byteLength;
 
-          coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
+          let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
           buffer = buffer.slice(extensionsDataLength);
           result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
             "hex"
           );
         }
-
-        if (buffer.byteLength)
-          throw new Error(
-            "Failed to decode authData! Leftover bytes been detected!"
-          );
 
         result.userHandle = Array.prototype.map
           .call(new Uint8Array(this.getResponse.response.userHandle), x =>
@@ -414,6 +349,11 @@ export default {
             ("00" + x.toString(16)).slice(-2)
           )
           .join("");
+
+        if (buffer.byteLength)
+          throw new Error(
+            "Failed to decode authData! Leftover bytes been detected!"
+          );
       }
 
       return result;

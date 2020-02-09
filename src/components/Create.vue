@@ -540,32 +540,20 @@ export default {
         let flagsBuffer = buffer.slice(0, 1);
         buffer = buffer.slice(1);
         let flagsInt = flagsBuffer[0];
-        result.up = !!(flagsInt & 0x01); // Test of User Presence
-        result.uv = !!(flagsInt & 0x04); // User Verification
-        result.at = !!(flagsInt & 0x40); // Attestation data
-        result.ed = !!(flagsInt & 0x80); // Extension data
+        result.up = !!(flagsInt & 0x01);
+        result.uv = !!(flagsInt & 0x04);
+        result.at = !!(flagsInt & 0x40);
+        result.ed = !!(flagsInt & 0x80);
 
         let counterBuffer = buffer.slice(0, 4);
         buffer = buffer.slice(4);
         result.signCount = counterBuffer.readUInt32BE(0);
 
         /* Attested credential data */
-        let aaguid = undefined;
-        let aaguidBuffer = undefined;
-        let credIdBuffer = undefined;
-        let cosePublicKeyBuffer = undefined;
-        let attestationMinLen = 16 + 2 + 16 + 77; // aaguid + credIdLen + credId + pk
-
         if (result.at) {
-          // Attested Data
-          if (buffer.byteLength < attestationMinLen)
-            throw new Error(
-              `It seems as the Attestation Data flag is set, but the remaining data is smaller than ${attestationMinLen} bytes. You might have set AT flag for the assertion response.`
-            );
-
-          aaguid = buffer.slice(0, 16).toString("hex");
+          let aaguid = buffer.slice(0, 16).toString("hex");
           buffer = buffer.slice(16);
-          aaguidBuffer = `${aaguid.slice(0, 8)}-${aaguid.slice(
+          let aaguidBuffer = `${aaguid.slice(0, 8)}-${aaguid.slice(
             8,
             12
           )}-${aaguid.slice(12, 16)}-${aaguid.slice(16, 20)}-${aaguid.slice(
@@ -576,23 +564,21 @@ export default {
           let credIdLenBuffer = buffer.slice(0, 2);
           buffer = buffer.slice(2);
           let credIdLen = credIdLenBuffer.readUInt16BE(0);
-          credIdBuffer = buffer.slice(0, credIdLen);
+          let credIdBuffer = buffer.slice(0, credIdLen);
           buffer = buffer.slice(credIdLen);
           result.credentialId = credIdBuffer.toString("hex");
 
           let pubKeyLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
-          cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
+          let cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
           buffer = buffer.slice(pubKeyLength);
           result.credentialPublicKey = cosePublicKeyBuffer.toString("hex");
         }
 
-        let coseExtensionsDataBuffer = undefined;
         if (result.ed) {
-          // Extension Data
           let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
             .byteLength;
 
-          coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
+          let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
           buffer = buffer.slice(extensionsDataLength);
           result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
             "hex"
