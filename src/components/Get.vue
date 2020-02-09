@@ -303,7 +303,6 @@ export default {
         );
 
         /** attestationObject */
-        // const cbor      = require('cbor');
         const vanillacbor = require("vanillacbor");
 
         let buffer = Buffer.from(
