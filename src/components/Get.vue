@@ -245,11 +245,8 @@ export default {
       reqAllowCredentials: [],
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
-      reqUserVerification: false,
-      createResult: "",
-      resResponseClientDataJSON: "",
-      getResponse: {},
-      transports: ["usb", "ble", "nfc", "internal"]
+      reqUserVerification: "preferred",
+      getResponse: {}
     };
   },
   computed: {
