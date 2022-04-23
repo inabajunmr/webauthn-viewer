@@ -1,14 +1,14 @@
 /*
  * vanilla CBOR decoder / encoder
- * https://github.com/herrjemand/vanillaCBOR
+ * https://github.com/webauthnworks/vanillaCBOR
  *
- * Copyright (c) 2018 Yuriy Ackermann <ackermann.yuriy@gmail.com>
+ * Copyright (c) 2018-2021 Yuriy Ackermann <ackermann.yuriy@gmail.com> <yuriy@webauthn.works>
  * Licensed under the MIT license.
  */
 (function(){
     'use strict';
 
-    let tags = {
+    const tags = {
         0: 'UNSIGNED_INT',
         1: 'NEGATIVE_INT',
         2: 'BYTE_STRING',
@@ -19,7 +19,7 @@
         7: 'FLOAT_AND_NO_CONTENT'
     }
 
-    let float_and_no_content_semantics = {
+    const float_and_no_content_semantics = {
         20: "FALSE",
         21: "TRUE",
         22: "NULL",
@@ -31,21 +31,23 @@
         31: "INFINITY_BREAK"
     }
 
-    var type = (obj) => {
+    const type = (obj) => {
         return {}.toString.call(obj)
                  .replace(/\[|\]/g, '')
                  .split(' ')[1];
     }
 
-    var enforceUint8Array = (buffer) => {
+    const enforceUint8Array = (buffer) => {
         let bufferType = type(buffer)
+        
         if( bufferType != 'Uint8Array' &&
             bufferType != 'Uint16Array' &&
             bufferType != 'Uint32Array' &&
+            bufferType != 'Array' &&
             bufferType != 'ArrayBuffer' )
            throw new TypeError('Only BufferSource is allowed!');
 
-        if(bufferType == 'ArrayBuffer')
+        if(bufferType == 'ArrayBuffer' || bufferType == 'Array')
             return new Uint8Array(buffer.slice())
         else
             return new Uint8Array(buffer.buffer.slice())
@@ -54,7 +56,7 @@
     }
 
 
-    let mergeTwoBuffers = function(buffer1, buffer2) {
+    const mergeTwoBuffers = function(buffer1, buffer2) {
         buffer1 = enforceBigEndian(enforceUint8Array(buffer1));
         buffer2 = enforceBigEndian(enforceUint8Array(buffer2));
 
@@ -67,12 +69,13 @@
         return mergedBuffers
     }
 
-    let isEndianBig = () => {
+    const isEndianBig = () => {
         let buff = new ArrayBuffer(2);
         let u8   = new Uint8Array(buff);
         let u16  = new Uint16Array(buff);
-        u8[0] = 0xCC;
-        u8[1] = 0xDD;
+
+        u8[0]    = 0xCC;
+        u8[1]    = 0xDD;
 
         if(u16[0] !== 0xDDCC)
             return false
@@ -80,14 +83,14 @@
         return true
     }
 
-    let enforceBigEndian = (buffer) => {
+    const enforceBigEndian = (buffer) => {
         if(isEndianBig())
             buffer = buffer.reverse();
 
         return buffer
     }
 
-    let readBE81632 = (buffer) => {
+    const readBE81632 = (buffer) => {
         if(typeof Buffer === 'undefined')
             buffer = enforceUint8Array(buffer);
         
@@ -105,7 +108,15 @@
             return new Uint32Array(buffer.buffer)[0]
     }
 
-    let getTLVForNext = (buffer) => {
+    const getTLVForNext = (buffer) => {
+        if(buffer.length == 1 && buffer[0] == 0xff) {
+            return {
+                TAG: tags[7],
+                VAL: 31,
+                LEN: 1
+            }
+        }
+
         let lennum   = buffer[0] - (buffer[0] & 32) - (buffer[0] & 64) - (buffer[0] & 128);
         let tagnum   = (buffer[0] - lennum) >> 5;
         let VAL = undefined;
@@ -192,7 +203,7 @@
     }
 
     let decodeCborStream = (buffer, expectedLength) => {
-        buffer = Array.from(buffer);
+        buffer = buffer.slice();
  
         let results    = [];
         let bLength    = 0;
@@ -269,7 +280,7 @@
                 break
                 case 'MAP':
                     result = decodeCborStream(workbuffer.slice(1), tlv.VAL * 2)
-                    if(result.length !== tlv.VAL * 2)
+                    if(result.length !== tlv.VAL * 2 && !(tlv.LEN === Infinity && result.length % 2 === 0))
                         throw new Error('MAP is missing keypairs!');
 
                     results.push(arrayPairsToMap(result))
@@ -296,16 +307,17 @@
                             results.push(undefined);
                             i += 1;
                         break
-                        // case "SIMPLE_CONT"
+                        // case "SIMPLE_CONT":
                         // break
-                        // case "FLOAT_16"
+                        // case "FLOAT_16":
                         // break
-                        // case "FLOAT_32"
+                        // case "FLOAT_32":
                         // break
-                        // case "FLOAT_64"
+                        // case "FLOAT_64":
                         // break
-                        // case "INFINITY_BREAK"
-                        // break
+                        case "INFINITY_BREAK":
+                            i += 1;
+                        break
                         default:
                             if(!type)
                                 throw new Error(`VALUE ${tlv.VAL} IS UNASSIGNED`);
