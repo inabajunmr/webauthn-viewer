@@ -316,7 +316,7 @@
                   class="input is-small"
                   type="text"
                   placeholder="extensions"
-                  v-model="this.reqExtensions"
+                  v-model="reqExtensions"
                 />
               </div>
             </div>
@@ -534,7 +534,9 @@ export default {
           request.publicKey.excludeCredentials.push(credentials);
         }
       }
-      request.extensions = JSON.parse(this.reqExtensions);
+      if(this.reqExtensions.length != 0) {
+        request.publicKey.extensions = JSON.parse(this.reqExtensions);
+      }
       return request;
     },
     createResponseView: function() {
