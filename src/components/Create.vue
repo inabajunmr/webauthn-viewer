@@ -307,6 +307,21 @@
             </div>
           </div>
         </div>
+        <div class="field">
+          <label class="label is-small">extensions</label>
+          <div class="columns">
+            <div class="column">
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  placeholder="extensions"
+                  v-model="this.reqExtensions"
+                />
+              </div>
+            </div>
+          </div>
+        </div>        
         <input
           type="button"
           value="navigator.credentials.create()"
@@ -406,6 +421,18 @@
               </td>
             </tr>
             <tr>
+              <th style="padding-left: 60px">.extension</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.extensions }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 60px">.extension(length)</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.extensionsDataLength }}
+              </td>
+            </tr>            
+            <tr>
               <th style="padding-left: 40px">.fmt</th>
               <td>{{ createResponseView.fmt }}</td>
             </tr>
@@ -455,6 +482,7 @@ export default {
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqExcludeCredentials: [],
+      reqExtensions: '{ "credProps": true }',
       createResponse: {}
     };
   },
@@ -506,6 +534,7 @@ export default {
           request.publicKey.excludeCredentials.push(credentials);
         }
       }
+      request.extensions = JSON.parse(this.reqExtensions);
       return request;
     },
     createResponseView: function() {
@@ -577,12 +606,10 @@ export default {
         if (result.ed) {
           let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
             .byteLength;
-
+          result.extensionsDataLength = extensionsDataLength;
           let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
           buffer = buffer.slice(extensionsDataLength);
-          result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
-            "hex"
-          );
+          result.extensions = cbor.decodeAllSync(coseExtensionsDataBuffer)[0];          
         }
 
         if (buffer.byteLength)
