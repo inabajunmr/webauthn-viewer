@@ -443,6 +443,12 @@
               </td>
             </tr>
             <tr>
+              <th>getTransports</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.getTransports }}
+              </td>
+            </tr>
+            <tr>
               <th>.id</th>
               <td style="word-wrap: break-word">
                 {{ createResponseView.id }}
@@ -452,6 +458,12 @@
               <th>.type</th>
               <td style="word-wrap: break-word">
                 {{ createResponseView.type }}
+              </td>
+            </tr>
+            <tr>
+              <th>getClientExtensionResults</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.getClientExtensionResults }}
               </td>
             </tr>
           </tbody>
@@ -542,9 +554,12 @@ export default {
     createResponseView: function() {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};
+      result.getClientExtensionResults = this.createResponse.getClientExtensionResults;
+      //console.log(this.createResponse.getClientExtensionResults());
       result.id = this.createResponse.id;
       result.type = this.createResponse.type;
       if (this.createResponse.response) {
+        result.getTransports = this.createResponse.response.getTransports;
         /** clientDataJSON */
         let enc = new TextDecoder("utf-8");
         result.clientDataJSON = enc.decode(
@@ -637,6 +652,10 @@ export default {
         .then(res => {
           console.log("Create Response", res);
           this.createResponse = res;
+          this.createResponse.getClientExtensionResults = res.getClientExtensionResults();
+          if (this.createResponse.response) {
+            this.createResponse.response.getTransports = res.response.getTransports();
+          }
         })
         .catch(err => {
           console.log("Create Error", err);
