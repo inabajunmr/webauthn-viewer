@@ -653,8 +653,10 @@ export default {
           console.log("Create Response", res);
           this.createResponse = res;
           this.createResponse.getClientExtensionResults = res.getClientExtensionResults();
-          if (this.createResponse.response) {
+          if (this.createResponse.response && this.createResponse.response.getTransports) {
             this.createResponse.response.getTransports = res.response.getTransports();
+          } else {
+            this.createResponse.response.getTransports = "getTransports() is undefined";
           }
         })
         .catch(err => {
