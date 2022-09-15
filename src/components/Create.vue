@@ -179,12 +179,12 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="platform or closs-platform"
+              placeholder="platform or cross-platform"
               v-model="reqAuthenticatorSectionAuthenticationAttachment"
             />
           </div>
         </div>
-        <div class="field">
+         <div class="field">
           <label class="label is-small"
             >authenticatorSection.requireResidentKey</label
           >
@@ -194,6 +194,19 @@
               type="text"
               placeholder="true"
               v-model="reqAuthenticatorSectionRequireResidentKey"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label is-small"
+            >authenticatorSection.residentKey</label
+          >
+          <div class="control">
+            <input
+              class="input is-small"
+              type="text"
+              placeholder="required or preferred or discouraged"
+              v-model="reqAuthenticatorSectionResidentKey"
             />
           </div>
         </div>
@@ -488,7 +501,8 @@ export default {
       reqUserDisplayName: "John P. Smith",
       reqPubKeyCredParams: [{ type: "public-key", alg: -7 }],
       reqAuthenticatorSectionAuthenticationAttachment: "",
-      reqAuthenticatorSectionRequireResidentKey: false,
+      reqAuthenticatorSectionRequireResidentKey: null,
+      reqAuthenticatorSectionResidentKey: "",
       reqAuthenticatorSectionUserVerification: "preferred",
       reqAttestation: "direct",
       reqTimeout: 60000,
@@ -518,6 +532,9 @@ export default {
       }
       if (this.reqAuthenticatorSectionRequireResidentKey) {
         request.publicKey.authenticatorSelection.requireResidentKey = this.reqAuthenticatorSectionRequireResidentKey;
+      }
+      if (this.reqAuthenticatorSectionResidentKey) {
+        request.publicKey.authenticatorSelection.residentKey = this.reqAuthenticatorSectionResidentKey;
       }
       if (this.reqAuthenticatorSectionUserVerification) {
         request.publicKey.authenticatorSelection.userVerification = this.reqAuthenticatorSectionUserVerification;

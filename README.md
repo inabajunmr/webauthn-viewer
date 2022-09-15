@@ -18,3 +18,8 @@ npm run serve
 ```
 npm run build
 ```
+
+### over nodejs 7
+```
+export NODE_OPTIONS=--openssl-legacy-provider
+```
