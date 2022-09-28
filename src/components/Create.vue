@@ -398,6 +398,18 @@
               </td>
             </tr>
             <tr>
+              <th style="padding-left: 60px">.flag.be</th>
+              <td>
+                {{ createResponseView.be }}
+              </td>
+            </tr>
+            <tr>
+              <th style="padding-left: 60px">.flag.bs</th>
+              <td>
+                {{ createResponseView.bs }}
+              </td>
+            </tr>
+            <tr>
               <th style="padding-left: 60px">.flag.at</th>
               <td>
                 {{ createResponseView.at }}
@@ -605,6 +617,8 @@ export default {
         let flagsInt = flagsBuffer[0];
         result.up = !!(flagsInt & 0x01);
         result.uv = !!(flagsInt & 0x04);
+        result.be = !!(flagsInt & 0x08);
+        result.bs = !!(flagsInt & 0x10);
         result.at = !!(flagsInt & 0x40);
         result.ed = !!(flagsInt & 0x80);
 
