@@ -4,6 +4,8 @@ WebAuthn response viewer for learning.
 
 https://inabajunmr.github.io/webauthn-viewer/
 
+![image](image.gif)
+
 ## Project setup
 ```
 npm install
