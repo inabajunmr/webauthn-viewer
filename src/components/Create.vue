@@ -689,7 +689,7 @@ export default {
 
       // call webauthn api
       console.log("Create Request", this.buildCreateRequest);
-      navigator.credentials
+      window.navigator.credentials
         .create(this.buildCreateRequest)
         .then(res => {
           console.log("Create Response", res);
