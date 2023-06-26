@@ -334,13 +334,15 @@
               </div>
             </div>
           </div>
-        </div>        
-        <input
-          type="button"
-          value="navigator.credentials.create()"
-          class="button is-primary is-large"
-          @click="create()"
-        />
+        </div> 
+        <form>       
+          <button
+            type="button"
+            value="navigator.credentials.create()"
+            class="button is-primary is-large"
+            @click="create()"
+          />
+        </form>
       </div>
       <div class="column">
         <h3 class="title">Response</h3>
