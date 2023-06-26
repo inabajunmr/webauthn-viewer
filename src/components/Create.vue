@@ -670,7 +670,7 @@ export default {
     }
   },
   methods: {
-    create() {
+    async create() {
       // reset
       this.errorType = "";
       this.errorMessage = "";
