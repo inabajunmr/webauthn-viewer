@@ -689,23 +689,24 @@ export default {
 
       // call webauthn api
       console.log("Create Request", this.buildCreateRequest);
-      window.navigator.credentials
-        .create(this.buildCreateRequest)
-        .then(res => {
-          console.log("Create Response", res);
-          this.createResponse = res;
-          this.createResponse.getClientExtensionResults = res.getClientExtensionResults();
-          if (this.createResponse.response && this.createResponse.response.getTransports) {
-            this.createResponse.response.getTransports = res.response.getTransports();
-          } else {
-            this.createResponse.response.getTransports = "getTransports() is undefined";
-          }
-        })
-        .catch(err => {
-          console.log("Create Error", err);
-          this.errorType = err.name;
-          this.errorMessage = err.message;
-        });
+      try{
+        const res = await window.navigator.credentials
+          .create(this.buildCreateRequest);
+        console.log("Create Response", res);
+        this.createResponse = res;
+        this.createResponse.getClientExtensionResults = res.getClientExtensionResults();
+        if (this.createResponse.response && this.createResponse.response.getTransports) {
+          this.createResponse.response.getTransports = res.response.getTransports();
+        } else {
+          this.createResponse.response.getTransports = "getTransports() is undefined";
+        }
+
+      }catch(e){
+          console.log("Create Error", e);
+          this.errorType = e.name;
+          this.errorMessage = e.message;
+      }
+            
     },
     generateRandomUserId() {
       this.reqUserId = require("crypto")
