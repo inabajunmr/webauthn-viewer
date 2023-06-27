@@ -673,18 +673,6 @@ export default {
   },
   methods: {
     async create() {
-
-      const op = await fetch('google.com', {
-        credentials: 'same-origin',
-      }).then(response => {
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        return response
-      })
-
-      console.log(op)
-
       // reset
       this.errorType = "";
       this.errorMessage = "";
