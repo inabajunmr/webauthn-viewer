@@ -674,7 +674,7 @@ export default {
   methods: {
     async create() {
 
-      const op = await fetch('/', {
+      const op = await fetch('https://google.com', {
         credentials: 'same-origin',
       }).then(response => {
         return response
