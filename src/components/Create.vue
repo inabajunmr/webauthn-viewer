@@ -173,53 +173,53 @@
         </div>
         <div class="field">
           <label class="label is-small"
-            >authenticatorSection.authenticationAttachment</label
+            >authenticatorSelection.authenticationAttachment</label
           >
           <div class="control">
             <input
               class="input is-small"
               type="text"
               placeholder="platform or cross-platform"
-              v-model="reqAuthenticatorSectionAuthenticationAttachment"
+              v-model="reqauthenticatorSelectionAuthenticationAttachment"
             />
           </div>
         </div>
          <div class="field">
           <label class="label is-small"
-            >authenticatorSection.requireResidentKey</label
+            >authenticatorSelection.requireResidentKey</label
           >
           <div class="control">
             <input
               class="input is-small"
               type="text"
               placeholder="true"
-              v-model="reqAuthenticatorSectionRequireResidentKey"
+              v-model="reqauthenticatorSelectionRequireResidentKey"
             />
           </div>
         </div>
         <div class="field">
           <label class="label is-small"
-            >authenticatorSection.residentKey</label
+            >authenticatorSelection.residentKey</label
           >
           <div class="control">
             <input
               class="input is-small"
               type="text"
               placeholder="required or preferred or discouraged"
-              v-model="reqAuthenticatorSectionResidentKey"
+              v-model="reqauthenticatorSelectionResidentKey"
             />
           </div>
         </div>
         <div class="field">
           <label class="label is-small"
-            >authenticatorSection.userVerification</label
+            >authenticatorSelection.userVerification</label
           >
           <div class="control">
             <input
               class="input is-small"
               type="text"
               placeholder="preferred"
-              v-model="reqAuthenticatorSectionUserVerification"
+              v-model="reqauthenticatorSelectionUserVerification"
             />
           </div>
         </div>
@@ -512,10 +512,10 @@ export default {
       reqUserIcon: "",
       reqUserDisplayName: "John P. Smith",
       reqPubKeyCredParams: [{ type: "public-key", alg: -7 }],
-      reqAuthenticatorSectionAuthenticationAttachment: "",
-      reqAuthenticatorSectionRequireResidentKey: null,
-      reqAuthenticatorSectionResidentKey: "",
-      reqAuthenticatorSectionUserVerification: "preferred",
+      reqauthenticatorSelectionAuthenticationAttachment: "",
+      reqauthenticatorSelectionRequireResidentKey: null,
+      reqauthenticatorSelectionResidentKey: "",
+      reqauthenticatorSelectionUserVerification: "preferred",
       reqAttestation: "direct",
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
@@ -539,20 +539,20 @@ export default {
       request.publicKey.user.displayName = this.reqUserDisplayName;
       request.publicKey.pubKeyCredParams = this.reqPubKeyCredParams;
       request.publicKey.authenticatorSelection = {};
-      if (this.reqAuthenticatorSectionAuthenticationAttachment) {
-        request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqAuthenticatorSectionAuthenticationAttachment;
+      if (this.reqauthenticatorSelectionAuthenticationAttachment) {
+        request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqauthenticatorSelectionAuthenticationAttachment;
       }
-      if (this.reqAuthenticatorSectionRequireResidentKey) {
-        request.publicKey.authenticatorSelection.requireResidentKey = this.reqAuthenticatorSectionRequireResidentKey;
+      if (this.reqauthenticatorSelectionRequireResidentKey) {
+        request.publicKey.authenticatorSelection.requireResidentKey = this.reqauthenticatorSelectionRequireResidentKey;
       }
-      if (this.reqAuthenticatorSectionResidentKey) {
-        request.publicKey.authenticatorSelection.residentKey = this.reqAuthenticatorSectionResidentKey;
+      if (this.reqauthenticatorSelectionResidentKey) {
+        request.publicKey.authenticatorSelection.residentKey = this.reqauthenticatorSelectionResidentKey;
       }
-      if (this.reqAuthenticatorSectionUserVerification) {
-        request.publicKey.authenticatorSelection.userVerification = this.reqAuthenticatorSectionUserVerification;
+      if (this.reqauthenticatorSelectionUserVerification) {
+        request.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
       }
-      if (this.reqAuthenticatorSectionUserVerification) {
-        request.publicKey.authenticatorSelection.userVerification = this.reqAuthenticatorSectionUserVerification;
+      if (this.reqauthenticatorSelectionUserVerification) {
+        request.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
       }
       request.publicKey.attestation = this.reqAttestation;
       request.publicKey.timeout = this.reqTimeout;
