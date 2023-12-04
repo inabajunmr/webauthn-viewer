@@ -134,6 +134,28 @@
             </div>
           </div>
         </div>
+        <div class="field">
+          <label class="label is-small">Autofill</label>
+          <div class="columns">
+            <div class="column">
+              <div class="control">
+                <input
+                  class="input is-small" autocomplete="username webauthn"
+                  type="text"
+                />
+              </div>
+            </div>
+            <div class="column">
+            <b-field>
+                <b-switch v-model="isConditionalUIEnabled" @click="conditionalUI()">
+                    Conditional UI
+                </b-switch>
+            </b-field>
+            </div>
+          </div>
+        </div>
+
+
         <input
           type="button"
           value="navigator.credentials.get()"
@@ -241,51 +263,19 @@ export default {
     return {
       errorType: "",
       errorMessage: "",
+      isConditionalUIEnabled: false,
       reqRpid: window.location.hostname,
       reqAllowCredentials: [],
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqUserVerification: "preferred",
-      getResponse: {}
+      getResponse: {},
+      abortController: new AbortController(),
     };
   },
   computed: {
     challengeForView: function() {
       return this.reqChallenge.toString("hex");
-    },
-    buildGetRequest: function() {
-      let request = {};
-      request.publicKey = {};
-      if (this.reqRpid) {
-        request.publicKey.rpid = this.reqRpid;
-      }
-      request.publicKey.allowCredentials = [];
-      for (let i = 0; i < this.reqAllowCredentials.length; i++) {
-        let exist = false;
-        let allowCredenial = this.reqAllowCredentials[i];
-        let credentials = {};
-        if (allowCredenial.id) {
-          credentials.id = Buffer.from(allowCredenial.id, "hex");
-          exist = true;
-        }
-        if (allowCredenial.type) {
-          credentials.type = allowCredenial.type;
-          exist = true;
-        }
-        if (allowCredenial.transports) {
-          credentials.transports = allowCredenial.transports;
-          exist = true;
-        }
-        if (exist) {
-          request.publicKey.allowCredentials.push(credentials);
-        }
-      }
-      if (this.reqUserVerification) {
-        request.publicKey.userVerification = this.reqUserVerification;
-      }
-      request.publicKey.timeout = this.reqTimeout;
-      request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
-      return request;
     },
     getResponseView: function() {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
@@ -355,7 +345,74 @@ export default {
       return result;
     }
   },
+  watch: {
+    isConditionalUIEnabled: function(newVal, oldVal) {
+      console.log(oldVal + "" + newVal);
+      if(newVal) {
+        // reset
+        this.errorType = "";
+        this.errorMessage = "";
+        this.getResponse = {};
+
+        // call webauthn api
+        let req = this.buildGetRequest();
+        req.mediation = 'conditional';
+        req.signal = this.abortController.signal;
+        console.log("Get Request for ConditionalUI", req);
+        navigator.credentials
+          .get(req)
+          .then(res => {
+            console.log("Get Response", res);
+            this.getResponse = res;
+          })
+          .catch(err => {
+            console.log("Get Error", err);
+            this.errorType = err.name;
+            this.errorMessage = err.message;
+          });
+      } else {
+        console.log("abort")
+        this.abortController.abort();
+        this.abortController = new AbortController();
+      }
+    }
+  },
   methods: {
+    buildGetRequest() {
+      console.log("WOW")
+      let request = {};
+      request.publicKey = {};
+      if (this.reqRpid) {
+        request.publicKey.rpid = this.reqRpid;
+      }
+      request.publicKey.allowCredentials = [];
+      for (let i = 0; i < this.reqAllowCredentials.length; i++) {
+        let exist = false;
+        let allowCredenial = this.reqAllowCredentials[i];
+        let credentials = {};
+        if (allowCredenial.id) {
+          credentials.id = Buffer.from(allowCredenial.id, "hex");
+          exist = true;
+        }
+        if (allowCredenial.type) {
+          credentials.type = allowCredenial.type;
+          exist = true;
+        }
+        if (allowCredenial.transports) {
+          credentials.transports = allowCredenial.transports;
+          exist = true;
+        }
+        if (exist) {
+          request.publicKey.allowCredentials.push(credentials);
+        }
+      }
+      if (this.reqUserVerification) {
+        request.publicKey.userVerification = this.reqUserVerification;
+      }
+      request.publicKey.timeout = this.reqTimeout;
+      request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
+      return request;
+    },    
     get() {
       // reset
       this.errorType = "";
@@ -363,9 +420,9 @@ export default {
       this.getResponse = {};
 
       // call webauthn api
-      console.log("Get Request", this.buildGetRequest);
+      console.log("Get Request", this.buildGetRequest());
       navigator.credentials
-        .get(this.buildGetRequest)
+        .get(this.buildGetRequest())
         .then(res => {
           console.log("Get Response", res);
           this.getResponse = res;
@@ -384,7 +441,7 @@ export default {
     },
     addAllowCredentials() {
       this.reqAllowCredentials.push({ type: "public-key", transports: [] });
-    }
+    },
   }
 };
 </script>
