@@ -182,7 +182,7 @@ export default {
       signalCurrentUserDetailsDisplayName: "John P. Smith",
       signalAllAcceptedCredentialsRpId: window.location.hostname,
       signalAllAcceptedCredentialsUserId: this.generateRandomUserId(),
-      signalAllAcceptedCredentialsAllAcceptedCredentals: [{id:"", r:Math.random()}],
+      signalAllAcceptedCredentialsAllAcceptedCredentals: [],
       signalUnknownCredentialRpId: window.location.hostname,
       signalUnknownCredentialCredentialId: ""
     };
