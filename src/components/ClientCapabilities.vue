@@ -7,7 +7,7 @@
         
         <input
           type="button"
-          value="PublicKeyCredential.getClientCapabilities()"
+          value="getClientCapabilities()"
           class="button is-primary is-large"
           @click="getClientCapabilities()"
         />
@@ -32,58 +32,10 @@
                 {{ errorMessage }}
               </td>
             </tr>
-            <tr>
-              <th>conditionalCreate</th>
+            <tr v-for="(value, key) in clientCapabilities" :key="key">
+              <th>{{ key }}</th>
               <td style="word-wrap: break-word">
-                {{ clientCapabilities.conditionalCreate }}
-              </td>
-            </tr>
-            <tr>
-              <th>conditionalGet</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.conditionalGet }}
-              </td>
-            </tr>
-            <tr>
-              <th>hybridTransport</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.hybridTransport }}
-              </td>
-            </tr>
-            <tr>
-              <th>passkeyPlatformAuthenticator</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.passkeyPlatformAuthenticator }}
-              </td>
-            </tr>
-            <tr>
-              <th>userVerifyingPlatformAuthenticator</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.userVerifyingPlatformAuthenticator }}
-              </td>
-            </tr>
-            <tr>
-              <th>relatedOrigin</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.relatedOrigin }}
-              </td>
-            </tr>
-            <tr>
-              <th>signalUnknownCredential</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.signalUnknownCredential }}
-              </td>
-            </tr>
-            <tr>
-              <th>signalAllAcceptedCredentials</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.signalAllAcceptedCredentials }}
-              </td>
-            </tr>
-            <tr>
-              <th>signalCurrentUserDetails</th>
-              <td style="word-wrap: break-word">
-                {{ clientCapabilities.signalCurrentUserDetails }}
+                {{ value }}
               </td>
             </tr>
           </tbody>
@@ -103,7 +55,7 @@ export default {
     };
   },
   methods: {
-    getClientCapabilities() {
+    async getClientCapabilities() {
       this.errorType = "";
       this.errorMessage = "";
       this.clientCapabilities = {};
@@ -114,7 +66,7 @@ export default {
       }
 
       try {
-        const capabilities = window.PublicKeyCredential.getClientCapabilities();
+        const capabilities = await window.PublicKeyCredential.getClientCapabilities();
         console.log("Client Capabilities", capabilities);
         this.clientCapabilities = capabilities;
       } catch(err) {
