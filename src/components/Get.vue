@@ -151,6 +151,35 @@
           </div>
         </div>
         <div class="field">
+          <label class="label is-small">hints</label>
+          <div class="control" style="font-size: 0.75rem;">
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="security-key"
+                v-model="reqHints"
+              />
+              security-key
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="client-device"
+                v-model="reqHints"
+              />
+              client-device
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="hybrid"
+                v-model="reqHints"
+              />
+              hybrid
+            </label>
+          </div>
+        </div>
+        <div class="field">
           <label class="label is-small">Autofill</label>
           <div class="columns">
             <div class="column">
@@ -297,6 +326,7 @@ export default {
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqUserVerification: "preferred",
+      reqHints: [],
       getResponse: {},
       abortController: new AbortController(),
     };
@@ -438,6 +468,9 @@ export default {
       }
       if (this.reqUserVerification) {
         request.publicKey.userVerification = this.reqUserVerification;
+      }
+      if(this.reqHints.length > 0) {
+        request.publicKey.hints = this.reqHints;
       }
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
