@@ -12,6 +12,10 @@
       <b-tab-item label="signal">
         <Signal />
       </b-tab-item>
+
+      <b-tab-item label="capabilities">
+        <ClientCapabilities />
+      </b-tab-item>
      
     </b-tabs>
   </div>
@@ -21,13 +25,15 @@
 import Create from "./Create.vue";
 import Get from "./Get.vue";
 import Signal from "./Signal.vue";
+import ClientCapabilities from "./ClientCapabilities.vue";
 
 export default {
   name: "app",
   components: {
     Create,
     Get,
-    Signal
+    Signal,
+    ClientCapabilities
   }
 };
 </script>
