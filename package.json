@@ -8,22 +8,26 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "@vue/cli": "^5.0.4",
+    "@vue/cli": "^5.0.8",
     "base64url": "^3.0.1",
-    "buefy": "^0.8.10",
-    "cbor": "^5.0.1",
-    "core-js": "^3.4.4",
+    "buefy": "^0.9.29",
+    "buffer": "^6.0.3",
+    "cbor": "^10.0.9",
+    "core-js": "^3.44.0",
+    "process": "^0.11.10",
     "vanillacbor": "git+https://github.com/herrjemand/vanillaCBOR.git",
-    "vue": "^2.6.10"
+    "vue": "^2.7.16"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.3.1",
-    "@vue/cli-plugin-eslint": "^4.3.1",
-    "@vue/cli-service": "^4.3.1",
-    "babel-eslint": "^10.0.3",
-    "eslint": "^5.16.0",
-    "eslint-plugin-vue": "^5.0.0",
-    "vue-template-compiler": "^2.6.10"
+    "@babel/eslint-parser": "^7.25.9",
+    "@vue/cli-plugin-babel": "^5.0.8",
+    "@vue/cli-plugin-eslint": "^5.0.8",
+    "@vue/cli-service": "^5.0.8",
+    "crypto-browserify": "^3.12.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-vue": "^9.29.1",
+    "stream-browserify": "^3.0.0",
+    "vue-template-compiler": "^2.7.16"
   },
   "eslintConfig": {
     "root": true,
@@ -35,10 +39,13 @@
       "eslint:recommended"
     ],
     "rules": {
-      "no-console": "off"
+      "no-console": "off",
+      "vue/multi-word-component-names": "off",
+      "vue/no-reserved-component-names": "off"
     },
     "parserOptions": {
-      "parser": "babel-eslint"
+      "parser": "@babel/eslint-parser",
+      "requireConfigFile": false
     }
   },
   "browserslist": [
