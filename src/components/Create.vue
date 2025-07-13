@@ -276,6 +276,22 @@
                   />
                   internal
                 </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="hybrid"
+                    v-model="excludeCredential.transports"
+                  />
+                  hybrid
+                </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="smart-card"
+                    v-model="excludeCredential.transports"
+                  />
+                  smart-card
+                </label>
               </div>
             </div>
           </div>
@@ -318,6 +334,35 @@
                 @click="generateChallenge()"
               />
             </div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label is-small">hints</label>
+          <div class="control" style="font-size: 0.75rem;">
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="security-key"
+                v-model="reqHints"
+              />
+              security-key
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="client-device"
+                v-model="reqHints"
+              />
+              client-device
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="hybrid"
+                v-model="reqHints"
+              />
+              hybrid
+            </label>
           </div>
         </div>
         <div class="field">
@@ -520,6 +565,7 @@ export default {
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqExcludeCredentials: [],
+      reqHints: [],
       reqExtensions: '{ "credProps": true }',
       createResponse: {}
     };
@@ -574,6 +620,9 @@ export default {
         if (exist) {
           request.publicKey.excludeCredentials.push(credentials);
         }
+      }
+      if(this.reqHints.length > 0) {
+        request.publicKey.hints = this.reqHints;
       }
       if(this.reqExtensions.length != 0) {
         request.publicKey.extensions = JSON.parse(this.reqExtensions);
