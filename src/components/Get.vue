@@ -67,6 +67,22 @@
                   />
                   internal
                 </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="hybrid"
+                    v-model="allowCredential.transports"
+                  />
+                  hybrid
+                </label>
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    value="smart-card"
+                    v-model="allowCredential.transports"
+                  />
+                  smart-card
+                </label>
               </div>
             </div>
           </div>
