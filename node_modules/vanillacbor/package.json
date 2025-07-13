@@ -1,6 +1,6 @@
 {
   "name": "vanillacbor",
-  "version": "0.0.6",
+  "version": "0.2.0",
   "description": "A vanillaJS CBOR decoder/encoder",
   "main": "lib/vanillacbor.js",
   "directories": {
@@ -11,16 +11,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/herrjemand/vanillaCBOR.git"
+    "url": "git+https://github.com/WebAuthnWorks/vanillaCBOR.git"
   },
   "keywords": [
     "cbor",
     "vanilla"
   ],
-  "author": "Yuriy Ackermann @herrjemand",
+  "author": "Yuriy Ackermann <yuriy@webauthn.works> @webauthnworks @herrjemand",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/herrjemand/vanillaCBOR/issues"
+    "url": "https://github.com/WebAuthnWorks/vanillaCBOR/issues"
   },
-  "homepage": "https://github.com/herrjemand/vanillaCBOR#readme"
+  "homepage": "https://github.com/WebAuthnWorks/vanillaCBOR#readme"
 }
