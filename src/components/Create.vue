@@ -172,6 +172,67 @@
           </div>
         </div>
         <div class="field">
+          <label class="label is-small">attestationFormats</label>
+          <div class="control" style="font-size: 0.75rem;">
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="packed"
+                v-model="reqAttestationFormats"
+              />
+              packed
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="tpm"
+                v-model="reqAttestationFormats"
+              />
+              tpm
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="android-key"
+                v-model="reqAttestationFormats"
+              />
+              android-key
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="android-safetynet"
+                v-model="reqAttestationFormats"
+              />
+              android-safetynet
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="fido-u2f"
+                v-model="reqAttestationFormats"
+              />
+              fido-u2f
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="apple-anonymous"
+                v-model="reqAttestationFormats"
+              />
+              apple-anonymous
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="none"
+                v-model="reqAttestationFormats"
+              />
+              none
+            </label>
+          </div>
+        </div>
+        <div class="field">
           <label class="label is-small"
             >authenticatorSelection.authenticationAttachment</label
           >
@@ -562,6 +623,7 @@ export default {
       reqauthenticatorSelectionResidentKey: "",
       reqauthenticatorSelectionUserVerification: "preferred",
       reqAttestation: "direct",
+      reqAttestationFormats: [],
       reqTimeout: 60000,
       reqChallenge: this.generateChallenge(),
       reqExcludeCredentials: [],
@@ -583,7 +645,7 @@ export default {
       request.publicKey.user.name = this.reqUserName;
       request.publicKey.user.icon = this.reqUserIcon;
       request.publicKey.user.displayName = this.reqUserDisplayName;
-      request.publicKey.pubKeyCredParams = this.reqPubKeyCredParams;
+      request.publicKey.pubKeyCredParams = [...this.reqPubKeyCredParams];
       request.publicKey.authenticatorSelection = {};
       if (this.reqauthenticatorSelectionAuthenticationAttachment) {
         request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqauthenticatorSelectionAuthenticationAttachment;
@@ -601,6 +663,9 @@ export default {
         request.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
       }
       request.publicKey.attestation = this.reqAttestation;
+      if(this.reqAttestationFormats.length > 0) {
+        request.publicKey.attestationFormats = [...this.reqAttestationFormats];
+      }
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
 
@@ -622,7 +687,7 @@ export default {
         }
       }
       if(this.reqHints.length > 0) {
-        request.publicKey.hints = this.reqHints;
+        request.publicKey.hints = [...this.reqHints];
       }
       if(this.reqExtensions.length != 0) {
         request.publicKey.extensions = JSON.parse(this.reqExtensions);
