@@ -608,42 +608,37 @@ export default {
       this.errorMessage = "";
       this.createResponse = {};
 
-      // Create completely plain object without any Vue reactivity
+      // Create request matching demo site structure exactly
       let plainRequest = {
         mediation: 'conditional',
-        signal: this.abortController.signal
+        publicKey: {
+          rp: {
+            name: "Passkeys demo",
+            id: window.location.hostname
+          },
+          user: {
+            id: new Uint8Array([49]), // Simple 1-byte ID like demo
+            name: this.username || "test@example.com",
+            displayName: this.username || "test@example.com"
+          },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 }
+          ],
+          attestation: "indirect", // Changed from "direct"
+          timeout: 30000, // Shorter timeout like demo
+          challenge: new Uint8Array(Buffer.from(this.reqChallenge, "hex")),
+          extensions: {
+            conditionalCreate: true // Key extension from demo
+          }
+        }
       };
       
-      plainRequest.publicKey = {
-        rp: {
-          name: String(this.reqRpName),
-          id: String(this.reqRpid)
-        },
-        user: {
-          id: Buffer.from(String(this.reqUserId), "hex"),
-          name: String(this.reqUserName || this.username),
-          displayName: String(this.reqUserDisplayName || this.username)
-        },
-        pubKeyCredParams: [
-          { type: "public-key", alg: -7 }
-        ],
-        authenticatorSelection: {
-          userVerification: "preferred"
-        },
-        attestation: String(this.reqAttestation),
-        timeout: Number(this.reqTimeout),
-        challenge: Buffer.from(String(this.reqChallenge), "hex"),
-        excludeCredentials: []
-      };
+      // No authenticatorSelection - removed completely like demo
+      // No excludeCredentials - removed completely like demo
       
-      // Add extensions if present
-      if (this.reqExtensions.length != 0) {
-        plainRequest.publicKey.extensions = JSON.parse(this.reqExtensions);
-      }
-      
-      console.log("Conditional Create Request", plainRequest);
+      console.log("Conditional Create Request (Demo Style)", plainRequest);
       console.log("pubKeyCredParams is array:", Array.isArray(plainRequest.publicKey.pubKeyCredParams));
-      console.log("excludeCredentials is array:", Array.isArray(plainRequest.publicKey.excludeCredentials));
+      console.log("Has conditionalCreate extension:", plainRequest.publicKey.extensions.conditionalCreate);
       
       navigator.credentials
         .create(plainRequest)
