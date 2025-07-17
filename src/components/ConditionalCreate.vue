@@ -5,6 +5,31 @@
         <h3 class="title">Conditional Create with Password Form</h3>
         
         <!-- Password Login Form -->
+        <!-- Browser Support Information -->
+        <div class="box">
+          <h4 class="subtitle is-size-6">Browser Support Information</h4>
+          <table class="table is-size-7">
+            <tbody>
+              <tr>
+                <th>Browser</th>
+                <td>{{ browserInfo }}</td>
+              </tr>
+              <tr>
+                <th>WebAuthn Support</th>
+                <td>{{ webAuthnSupport }}</td>
+              </tr>
+              <tr>
+                <th>Conditional Mediation Available</th>
+                <td :class="conditionalMediationClass">{{ conditionalMediationSupport }}</td>
+              </tr>
+              <tr>
+                <th>HTTPS</th>
+                <td :class="httpsClass">{{ httpsStatus }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div class="box">
           <h4 class="subtitle is-size-6">Password Login (Conditional Create)</h4>
           <form @submit.prevent="submitPasswordAndConditionalCreate">
@@ -583,33 +608,32 @@ export default {
       this.errorMessage = "";
       this.createResponse = {};
 
-      // Create completely new object to avoid Vue reactivity issues
+      // Create completely plain object without any Vue reactivity
       let plainRequest = {
         mediation: 'conditional',
-        signal: this.abortController.signal,
-        publicKey: {
-          rp: {
-            name: this.reqRpName,
-            id: this.reqRpid,
-            icon: this.reqRpIcon || undefined
-          },
-          user: {
-            id: Buffer.from(this.reqUserId, "hex"),
-            name: this.reqUserName || this.username,
-            displayName: this.reqUserDisplayName || this.username,
-            icon: this.reqUserIcon || undefined
-          },
-          pubKeyCredParams: [
-            { type: "public-key", alg: -7 }
-          ],
-          authenticatorSelection: {
-            userVerification: "preferred"
-          },
-          attestation: this.reqAttestation,
-          timeout: this.reqTimeout,
-          challenge: Buffer.from(this.reqChallenge, "hex"),
-          excludeCredentials: []
-        }
+        signal: this.abortController.signal
+      };
+      
+      plainRequest.publicKey = {
+        rp: {
+          name: String(this.reqRpName),
+          id: String(this.reqRpid)
+        },
+        user: {
+          id: Buffer.from(String(this.reqUserId), "hex"),
+          name: String(this.reqUserName || this.username),
+          displayName: String(this.reqUserDisplayName || this.username)
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 }
+        ],
+        authenticatorSelection: {
+          userVerification: "preferred"
+        },
+        attestation: String(this.reqAttestation),
+        timeout: Number(this.reqTimeout),
+        challenge: Buffer.from(String(this.reqChallenge), "hex"),
+        excludeCredentials: []
       };
       
       // Add extensions if present
