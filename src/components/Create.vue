@@ -989,10 +989,8 @@ export default {
         duration: 3000,
       });
 
-      // Execute conditional meditation API after short delay
-      setTimeout(() => {
-        this.executeConditionalMeditation();
-      }, 1000);
+      // Wait for user interaction then start conditional mediation
+      this.initConditionalOnInteraction();
     },
 
     async executeConditionalMeditation() {
@@ -1204,6 +1202,52 @@ export default {
           duration: 4000,
         });
       }
+    },
+
+    // Wait for user interaction before conditional mediation
+    initConditionalOnInteraction() {
+      const startConditional = async () => {
+        console.log('👆 ユーザーインタラクションを検出しました');
+        document.removeEventListener('click', startConditional);
+        document.removeEventListener('focus', startConditional);
+        document.removeEventListener('keydown', startConditional);
+        
+        await this.setupConditionalPasskey();
+      };
+
+      document.addEventListener('click', startConditional, { once: true });
+      document.addEventListener('focus', startConditional, { once: true });
+      document.addEventListener('keydown', startConditional, { once: true });
+      
+      this.$buefy.toast.open({
+        message: 'ページをクリックするとパスキー作成を開始します',
+        type: 'is-info',
+        duration: 4000,
+      });
+    },
+
+    async setupConditionalPasskey() {
+      // Wait for page focus if not focused
+      if (!document.hasFocus()) {
+        console.log('⏳ ページのフォーカスを待機中...');
+        await new Promise(resolve => {
+          const checkFocus = () => {
+            if (document.hasFocus()) {
+              resolve();
+            } else {
+              setTimeout(checkFocus, 100);
+            }
+          };
+          checkFocus();
+        });
+      }
+
+      console.log('✅ ページがフォーカスされました');
+      
+      // Wait a bit more then start conditional mediation
+      setTimeout(() => {
+        this.executeConditionalMeditation();
+      }, 500);
     },
   },
 };
