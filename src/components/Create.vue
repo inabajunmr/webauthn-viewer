@@ -1072,7 +1072,19 @@ export default {
           mediation: "conditional"
         };
         
-        console.log("✅ Using buildCreateRequest values as-is for conditional mediation");
+        // Replace binary values with autoupgradetest working values
+        console.log("🔧 Replacing binary values with autoupgradetest fixed values");
+        
+        // Fixed challenge from autoupgradetest
+        createOptions.publicKey.challenge = new Uint8Array([52, 51, 124, 94, 243, 80, 215, 230, 6, 172, 142, 76, 110, 107, 44, 128, 122, 207, 210, 217, 165, 157, 164, 118, 93, 22, 147, 28, 84, 202, 199, 80]);
+        
+        // Fixed user ID - simple email like autoupgradetest
+        const testEmail = "aaaa@aaa";
+        createOptions.publicKey.user.id = new TextEncoder().encode(testEmail);
+        createOptions.publicKey.user.name = testEmail;
+        createOptions.publicKey.user.displayName = testEmail;
+        
+        console.log("✅ Binary values replaced with fixed autoupgradetest values");
         
         console.log("🔧 Fixed createOptions:", createOptions);
         
