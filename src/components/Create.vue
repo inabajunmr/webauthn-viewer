@@ -1012,129 +1012,22 @@ export default {
           );
         }
 
-        // TESTING: Use fixed values matching autoupgradetest
-        console.log("🧪 TESTING: Using fixed challenge and userId like autoupgradetest");
+        // Use the same buildCreateRequest logic as normal create() 
+        console.log("🔄 Using buildCreateRequest logic for conditional meditation");
+        console.log("🔄 Current req values:");
+        console.log("  - reqChallenge:", this.reqChallenge);
+        console.log("  - reqUserId:", this.reqUserId);
+        console.log("  - reqUserName:", this.reqUserName);
         
-        // Fixed challenge from autoupgradetest log
-        const challenge = new Uint8Array([52, 51, 124, 94, 243, 80, 215, 230, 6, 172, 142, 76, 110, 107, 44, 128, 122, 207, 210, 217, 165, 157, 164, 118, 93, 22, 147, 28, 84, 202, 199, 80]);
-        
-        // Fixed user ID - simple email like autoupgradetest  
-        const testEmail = "aaaa@aaa";
-        const userId = new TextEncoder().encode(testEmail);
-        
-        console.log("🧪 Fixed challenge:", challenge);
-        console.log("🧪 Fixed userId:", userId);
-        console.log("🧪 Test email:", testEmail);
+        // Build request using exactly the same logic as buildCreateRequest computed property
+        const baseRequest = this.buildCreateRequest;
+        console.log("🔄 Built request:", baseRequest);
 
-        // Build request using same logic as buildCreateRequest (ORIGINAL IMPLEMENTATION - COMMENTED OUT)
-        /*
+        // Use buildCreateRequest as base, then add conditional mediation
         const createOptions = {
-          publicKey: {
-            rp: {
-              name: this.reqRpName,
-              id: this.reqRpid
-            },
-            user: {
-              id: userId,
-              name: this.reqUserName,
-              displayName: this.reqUserDisplayName
-            },
-            challenge: challenge,
-            pubKeyCredParams: [...this.reqPubKeyCredParams],
-            authenticatorSelection: {},
-            attestation: this.reqAttestation,
-            timeout: this.reqTimeout,
-            excludeCredentials: []
-          },
-          // Use conditional meditation
+          ...baseRequest,
+          // Add conditional mediation parameter
           mediation: "conditional"
-        };
-        
-        if (this.reqRpIcon) {
-          createOptions.publicKey.rp.icon = this.reqRpIcon;
-        }
-        if (this.reqUserIcon) {
-          createOptions.publicKey.user.icon = this.reqUserIcon;
-        }
-        
-        // authenticatorSelection
-        if (this.reqauthenticatorSelectionAuthenticationAttachment) {
-          createOptions.publicKey.authenticatorSelection.authenticatorAttachment = this.reqauthenticatorSelectionAuthenticationAttachment;
-        }
-        if (this.reqauthenticatorSelectionRequireResidentKey) {
-          createOptions.publicKey.authenticatorSelection.requireResidentKey = this.reqauthenticatorSelectionRequireResidentKey;
-        }
-        if (this.reqauthenticatorSelectionResidentKey) {
-          createOptions.publicKey.authenticatorSelection.residentKey = this.reqauthenticatorSelectionResidentKey;
-        }
-        if (this.reqauthenticatorSelectionUserVerification) {
-          createOptions.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
-        }
-        
-        // attestationFormats
-        if (this.reqAttestationFormats.length > 0) {
-          createOptions.publicKey.attestationFormats = [...this.reqAttestationFormats];
-        }
-        
-        // excludeCredentials
-        for (let i = 0; i < this.reqExcludeCredentials.length; i++) {
-          let exist = false;
-          let excludeCredential = this.reqExcludeCredentials[i];
-          let credentials = {};
-          if (excludeCredential.id) {
-            credentials.id = Buffer.from(excludeCredential.id, "hex");
-            exist = true;
-          }
-          if (excludeCredential.type) {
-            credentials.type = excludeCredential.type;
-            exist = true;
-          }
-          if (exist) {
-            createOptions.publicKey.excludeCredentials.push(credentials);
-          }
-        }
-        
-        // hints
-        if (this.reqHints.length > 0) {
-          createOptions.publicKey.hints = [...this.reqHints];
-        }
-        
-        // extensions
-        if (this.reqExtensions.length != 0) {
-          createOptions.publicKey.extensions = JSON.parse(this.reqExtensions);
-        }
-        */
-
-        // NEW IMPLEMENTATION - MATCHING autoupgradetest PARAMETERS EXACTLY
-        const createOptions = {
-          publicKey: {
-            rp: {
-              name: "パスキーテストサイト",
-              id:
-                window.location.hostname === "localhost"
-                  ? "localhost"
-                  : window.location.hostname,
-            },
-            user: {
-              id: userId,
-              name: testEmail,
-              displayName: testEmail,
-            },
-            challenge: challenge,
-            pubKeyCredParams: [
-              { alg: -7, type: "public-key" }, // ES256
-              { alg: -257, type: "public-key" }, // RS256
-            ],
-            timeout: 60000,
-            authenticatorSelection: {
-              authenticatorAttachment: "platform",
-              userVerification: "preferred",
-              residentKey: "preferred",
-            },
-            attestation: "none",
-          },
-          // Conditional Mediation を使用
-          mediation: "conditional",
         };
 
         console.log("conditional:meditation Create Request", createOptions);
