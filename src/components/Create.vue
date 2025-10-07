@@ -1012,50 +1012,19 @@ export default {
           );
         }
 
-        // Process challenge and userId
-        let challenge;
-        try {
-          if (this.reqChallenge && this.reqChallenge.trim()) {
-            const hexString = this.reqChallenge.replace(/\s+/g, "");
-            if (hexString.match(/^[0-9a-fA-F]+$/)) {
-              challenge = new Uint8Array(
-                hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-              );
-            } else {
-              throw new Error("Invalid hex format");
-            }
-          } else {
-            challenge = require("crypto").randomBytes(32);
-          }
-        } catch (e) {
-          console.warn(
-            "Challenge parsing failed, generating new challenge:",
-            e.message
-          );
-          challenge = require("crypto").randomBytes(32);
-        }
-
-        let userId;
-        try {
-          if (this.reqUserId && this.reqUserId.trim()) {
-            const hexString = this.reqUserId.replace(/\s+/g, "");
-            if (hexString.match(/^[0-9a-fA-F]+$/)) {
-              userId = new Uint8Array(
-                hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-              );
-            } else {
-              throw new Error("Invalid hex format");
-            }
-          } else {
-            userId = Buffer.from(this.reqUserId || "default-user-id", "hex");
-          }
-        } catch (e) {
-          console.warn(
-            "UserId parsing failed, using default value:",
-            e.message
-          );
-          userId = Buffer.from(this.reqUserId || "default-user-id", "hex");
-        }
+        // TESTING: Use fixed values matching autoupgradetest
+        console.log("🧪 TESTING: Using fixed challenge and userId like autoupgradetest");
+        
+        // Fixed challenge from autoupgradetest log
+        const challenge = new Uint8Array([52, 51, 124, 94, 243, 80, 215, 230, 6, 172, 142, 76, 110, 107, 44, 128, 122, 207, 210, 217, 165, 157, 164, 118, 93, 22, 147, 28, 84, 202, 199, 80]);
+        
+        // Fixed user ID - simple email like autoupgradetest  
+        const testEmail = "aaaa@aaa";
+        const userId = new TextEncoder().encode(testEmail);
+        
+        console.log("🧪 Fixed challenge:", challenge);
+        console.log("🧪 Fixed userId:", userId);
+        console.log("🧪 Test email:", testEmail);
 
         // Build request using same logic as buildCreateRequest (ORIGINAL IMPLEMENTATION - COMMENTED OUT)
         /*
@@ -1147,9 +1116,9 @@ export default {
                   : window.location.hostname,
             },
             user: {
-              id: new TextEncoder().encode(this.reqUserName || "default-user"),
-              name: this.reqUserName || "default-user",
-              displayName: this.reqUserName || "default-user",
+              id: userId,
+              name: testEmail,
+              displayName: testEmail,
             },
             challenge: challenge,
             pubKeyCredParams: [
