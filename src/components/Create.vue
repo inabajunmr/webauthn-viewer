@@ -888,18 +888,18 @@ export default {
     },
 
     checkMeditationResult() {
-      // Check URL parameters from Vue Router
-      const routeQuery = this.$route.query;
-      
       console.log("🔍 checkMeditationResult called");
-      console.log("🔍 Route query:", routeQuery);
-      console.log("🔍 loginCompleted value:", routeQuery.loginCompleted);
-      console.log("🔍 loginCompleted type:", typeof routeQuery.loginCompleted);
+      
+      // Check URL parameters from Vue Router query
+      const queryParams = this.$route.query;
+      console.log("🔍 Route query:", queryParams);
+      console.log("🔍 loginCompleted value:", queryParams.loginCompleted);
+      console.log("🔍 loginCompleted type:", typeof queryParams.loginCompleted);
 
       // Execute conditional meditation API if login completed
-      if (routeQuery.loginCompleted === "true") {
+      if (queryParams.loginCompleted === "true") {
         console.log("✅ Login completed detected, calling handleLoginCompleted");
-        this.handleLoginCompleted(routeQuery);
+        this.handleLoginCompleted(queryParams);
         return;
       } else {
         console.log("❌ Login completed not detected");
