@@ -868,7 +868,7 @@ export default {
 
       // Navigate to static login page
       const queryString = new URLSearchParams(params).toString();
-      window.location.href = `/login.html?${queryString}`;
+      window.location.href = `/webauthn-viewer/login.html?${queryString}`;
     },
     generateRandomUserId() {
       this.reqUserId = require("crypto").randomBytes(32).toString("hex");

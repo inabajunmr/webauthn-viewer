@@ -436,13 +436,13 @@
                 });
                 
                 // Redirect back to main app instead of handling here
-                window.location.href = `/#/?${params.toString()}`;
+                window.location.href = `/webauthn-viewer/#/?${params.toString()}`;
             }, 500);
         });
 
         // Handle back button
         document.getElementById('backLink').addEventListener('click', function() {
-            window.location.href = '/';
+            window.location.href = '/webauthn-viewer/';
         });
 
         // Check if we should auto-start passkey creation (for testing static page directly)
