@@ -173,7 +173,7 @@
         </div>
         <div class="field">
           <label class="label is-small">attestationFormats</label>
-          <div class="control" style="font-size: 0.75rem;">
+          <div class="control" style="font-size: 0.75rem">
             <label class="checkbox">
               <input
                 type="checkbox"
@@ -245,7 +245,7 @@
             />
           </div>
         </div>
-         <div class="field">
+        <div class="field">
           <label class="label is-small"
             >authenticatorSelection.requireResidentKey</label
           >
@@ -304,7 +304,7 @@
             </div>
             <div class="column">
               <label class="label is-small">.transports</label>
-              <div class="control" style="font-size: 0.75rem;">
+              <div class="control" style="font-size: 0.75rem">
                 <label class="checkbox">
                   <input
                     type="checkbox"
@@ -399,29 +399,17 @@
         </div>
         <div class="field">
           <label class="label is-small">hints</label>
-          <div class="control" style="font-size: 0.75rem;">
+          <div class="control" style="font-size: 0.75rem">
             <label class="checkbox">
-              <input
-                type="checkbox"
-                value="security-key"
-                v-model="reqHints"
-              />
+              <input type="checkbox" value="security-key" v-model="reqHints" />
               security-key
             </label>
             <label class="checkbox">
-              <input
-                type="checkbox"
-                value="client-device"
-                v-model="reqHints"
-              />
+              <input type="checkbox" value="client-device" v-model="reqHints" />
               client-device
             </label>
             <label class="checkbox">
-              <input
-                type="checkbox"
-                value="hybrid"
-                v-model="reqHints"
-              />
+              <input type="checkbox" value="hybrid" v-model="reqHints" />
               hybrid
             </label>
           </div>
@@ -444,10 +432,7 @@
         <div class="field">
           <div class="control">
             <label class="checkbox">
-              <input
-                type="checkbox"
-                v-model="conditionalMeditation"
-              />
+              <input type="checkbox" v-model="conditionalMeditation" />
               conditional:meditation
             </label>
           </div>
@@ -461,7 +446,7 @@
       </div>
       <div class="column">
         <h3 class="title">Response</h3>
-        
+
         <table
           class="table is-responsive"
           style="table-layout: fixed; width: 100%"
@@ -574,7 +559,7 @@
               <td style="word-wrap: break-word">
                 {{ createResponseView.extensionsDataLength }}
               </td>
-            </tr>            
+            </tr>
             <tr>
               <th style="padding-left: 40px">.fmt</th>
               <td>{{ createResponseView.fmt }}</td>
@@ -642,11 +627,11 @@ export default {
       reqHints: [],
       reqExtensions: '{ "credProps": true }',
       createResponse: {},
-      conditionalMeditation: false
+      conditionalMeditation: false,
     };
   },
   computed: {
-    buildCreateRequest: function() {
+    buildCreateRequest: function () {
       let request = {};
       request.publicKey = {};
       request.publicKey.rp = {};
@@ -661,22 +646,27 @@ export default {
       request.publicKey.pubKeyCredParams = [...this.reqPubKeyCredParams];
       request.publicKey.authenticatorSelection = {};
       if (this.reqauthenticatorSelectionAuthenticationAttachment) {
-        request.publicKey.authenticatorSelection.authenticatorAttachment = this.reqauthenticatorSelectionAuthenticationAttachment;
+        request.publicKey.authenticatorSelection.authenticatorAttachment =
+          this.reqauthenticatorSelectionAuthenticationAttachment;
       }
       if (this.reqauthenticatorSelectionRequireResidentKey) {
-        request.publicKey.authenticatorSelection.requireResidentKey = this.reqauthenticatorSelectionRequireResidentKey;
+        request.publicKey.authenticatorSelection.requireResidentKey =
+          this.reqauthenticatorSelectionRequireResidentKey;
       }
       if (this.reqauthenticatorSelectionResidentKey) {
-        request.publicKey.authenticatorSelection.residentKey = this.reqauthenticatorSelectionResidentKey;
+        request.publicKey.authenticatorSelection.residentKey =
+          this.reqauthenticatorSelectionResidentKey;
       }
       if (this.reqauthenticatorSelectionUserVerification) {
-        request.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
+        request.publicKey.authenticatorSelection.userVerification =
+          this.reqauthenticatorSelectionUserVerification;
       }
       if (this.reqauthenticatorSelectionUserVerification) {
-        request.publicKey.authenticatorSelection.userVerification = this.reqauthenticatorSelectionUserVerification;
+        request.publicKey.authenticatorSelection.userVerification =
+          this.reqauthenticatorSelectionUserVerification;
       }
       request.publicKey.attestation = this.reqAttestation;
-      if(this.reqAttestationFormats.length > 0) {
+      if (this.reqAttestationFormats.length > 0) {
         request.publicKey.attestationFormats = [...this.reqAttestationFormats];
       }
       request.publicKey.timeout = this.reqTimeout;
@@ -699,18 +689,19 @@ export default {
           request.publicKey.excludeCredentials.push(credentials);
         }
       }
-      if(this.reqHints.length > 0) {
+      if (this.reqHints.length > 0) {
         request.publicKey.hints = [...this.reqHints];
       }
-      if(this.reqExtensions.length != 0) {
+      if (this.reqExtensions.length != 0) {
         request.publicKey.extensions = JSON.parse(this.reqExtensions);
       }
       return request;
     },
-    createResponseView: function() {
+    createResponseView: function () {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};
-      result.getClientExtensionResults = this.createResponse.getClientExtensionResults;
+      result.getClientExtensionResults =
+        this.createResponse.getClientExtensionResults;
       //console.log(this.createResponse.getClientExtensionResults());
       result.id = this.createResponse.id;
       result.type = this.createResponse.type;
@@ -779,12 +770,12 @@ export default {
         }
 
         if (result.ed) {
-          let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
-            .byteLength;
+          let extensionsDataLength =
+            vanillacbor.decodeOnlyFirst(buffer).byteLength;
           result.extensionsDataLength = extensionsDataLength;
           let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
           buffer = buffer.slice(extensionsDataLength);
-          result.extensions = cbor.decodeAllSync(coseExtensionsDataBuffer)[0];          
+          result.extensions = cbor.decodeAllSync(coseExtensionsDataBuffer)[0];
         }
 
         if (buffer.byteLength)
@@ -794,7 +785,7 @@ export default {
       }
 
       return result;
-    }
+    },
   },
   mounted() {
     this.checkMeditationResult();
@@ -815,7 +806,8 @@ export default {
       // WebAuthn support check
       if (!navigator.credentials) {
         this.errorType = "NotSupportedError";
-        this.errorMessage = "navigator.credentials is not available. Please use HTTPS or a supported browser.";
+        this.errorMessage =
+          "navigator.credentials is not available. Please use HTTPS or a supported browser.";
         console.error("WebAuthn Error: navigator.credentials is not available");
         return;
       }
@@ -824,17 +816,23 @@ export default {
       console.log("Create Request", this.buildCreateRequest);
       navigator.credentials
         .create(this.buildCreateRequest)
-        .then(res => {
+        .then((res) => {
           console.log("Create Response", res);
           this.createResponse = res;
-          this.createResponse.getClientExtensionResults = res.getClientExtensionResults();
-          if (this.createResponse.response && this.createResponse.response.getTransports) {
-            this.createResponse.response.getTransports = res.response.getTransports();
+          this.createResponse.getClientExtensionResults =
+            res.getClientExtensionResults();
+          if (
+            this.createResponse.response &&
+            this.createResponse.response.getTransports
+          ) {
+            this.createResponse.response.getTransports =
+              res.response.getTransports();
           } else {
-            this.createResponse.response.getTransports = "getTransports() is undefined";
+            this.createResponse.response.getTransports =
+              "getTransports() is undefined";
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.log("Create Error", err);
           this.errorType = err.name;
           this.errorMessage = err.message;
@@ -851,35 +849,35 @@ export default {
         userIcon: this.reqUserIcon,
         userDisplayName: this.reqUserDisplayName,
         pubKeyCredParams: JSON.stringify(this.reqPubKeyCredParams),
-        authenticatorSelectionAuthenticationAttachment: this.reqauthenticatorSelectionAuthenticationAttachment,
-        authenticatorSelectionRequireResidentKey: this.reqauthenticatorSelectionRequireResidentKey,
-        authenticatorSelectionResidentKey: this.reqauthenticatorSelectionResidentKey,
-        authenticatorSelectionUserVerification: this.reqauthenticatorSelectionUserVerification,
+        authenticatorSelectionAuthenticationAttachment:
+          this.reqauthenticatorSelectionAuthenticationAttachment,
+        authenticatorSelectionRequireResidentKey:
+          this.reqauthenticatorSelectionRequireResidentKey,
+        authenticatorSelectionResidentKey:
+          this.reqauthenticatorSelectionResidentKey,
+        authenticatorSelectionUserVerification:
+          this.reqauthenticatorSelectionUserVerification,
         attestation: this.reqAttestation,
         attestationFormats: JSON.stringify(this.reqAttestationFormats),
         timeout: this.reqTimeout,
         challenge: this.reqChallenge,
         excludeCredentials: JSON.stringify(this.reqExcludeCredentials),
         hints: JSON.stringify(this.reqHints),
-        extensions: this.reqExtensions
+        extensions: this.reqExtensions,
       };
-      
+
       // Navigate to login screen using Vue Router
       this.$router.push({
-        name: 'Login',
-        query: params
+        name: "Login",
+        query: params,
       });
     },
     generateRandomUserId() {
-      this.reqUserId = require("crypto")
-        .randomBytes(32)
-        .toString("hex");
+      this.reqUserId = require("crypto").randomBytes(32).toString("hex");
       return this.reqUserId;
     },
     generateChallenge() {
-      this.reqChallenge = require("crypto")
-        .randomBytes(32)
-        .toString("hex");
+      this.reqChallenge = require("crypto").randomBytes(32).toString("hex");
       return this.reqChallenge;
     },
     addExcludeCredentials() {
@@ -888,141 +886,177 @@ export default {
     addPubKeyCredParam() {
       this.reqPubKeyCredParams.push({ type: "public-key" });
     },
-    
+
     checkMeditationResult() {
       // Check URL parameters
       const urlParams = new URLSearchParams(window.location.search);
-      
+
       // Execute conditional meditation API if login completed
-      if (urlParams.get('loginCompleted') === 'true') {
+      if (urlParams.get("loginCompleted") === "true") {
         this.handleLoginCompleted(urlParams);
         return;
       }
     },
-    
+
     handleLoginCompleted(urlParams) {
       // Restore configuration parameters
-      if (urlParams.get('rpName')) this.reqRpName = urlParams.get('rpName');
-      if (urlParams.get('rpId')) this.reqRpid = urlParams.get('rpId');
-      if (urlParams.get('rpIcon')) this.reqRpIcon = urlParams.get('rpIcon');
-      if (urlParams.get('userId')) this.reqUserId = urlParams.get('userId');
-      if (urlParams.get('userName')) this.reqUserName = urlParams.get('userName');
-      if (urlParams.get('userIcon')) this.reqUserIcon = urlParams.get('userIcon');
-      if (urlParams.get('userDisplayName')) this.reqUserDisplayName = urlParams.get('userDisplayName');
-      if (urlParams.get('pubKeyCredParams')) {
+      if (urlParams.get("rpName")) this.reqRpName = urlParams.get("rpName");
+      if (urlParams.get("rpId")) this.reqRpid = urlParams.get("rpId");
+      if (urlParams.get("rpIcon")) this.reqRpIcon = urlParams.get("rpIcon");
+      if (urlParams.get("userId")) this.reqUserId = urlParams.get("userId");
+      if (urlParams.get("userName"))
+        this.reqUserName = urlParams.get("userName");
+      if (urlParams.get("userIcon"))
+        this.reqUserIcon = urlParams.get("userIcon");
+      if (urlParams.get("userDisplayName"))
+        this.reqUserDisplayName = urlParams.get("userDisplayName");
+      if (urlParams.get("pubKeyCredParams")) {
         try {
-          this.reqPubKeyCredParams = JSON.parse(urlParams.get('pubKeyCredParams'));
+          this.reqPubKeyCredParams = JSON.parse(
+            urlParams.get("pubKeyCredParams")
+          );
         } catch (e) {
-          console.warn('Failed to parse pubKeyCredParams:', e);
+          console.warn("Failed to parse pubKeyCredParams:", e);
         }
       }
-      if (urlParams.get('authenticatorSelectionAuthenticationAttachment')) {
-        this.reqauthenticatorSelectionAuthenticationAttachment = urlParams.get('authenticatorSelectionAuthenticationAttachment');
+      if (urlParams.get("authenticatorSelectionAuthenticationAttachment")) {
+        this.reqauthenticatorSelectionAuthenticationAttachment = urlParams.get(
+          "authenticatorSelectionAuthenticationAttachment"
+        );
       }
-      if (urlParams.get('authenticatorSelectionRequireResidentKey')) {
-        this.reqauthenticatorSelectionRequireResidentKey = urlParams.get('authenticatorSelectionRequireResidentKey');
+      if (urlParams.get("authenticatorSelectionRequireResidentKey")) {
+        this.reqauthenticatorSelectionRequireResidentKey = urlParams.get(
+          "authenticatorSelectionRequireResidentKey"
+        );
       }
-      if (urlParams.get('authenticatorSelectionResidentKey')) {
-        this.reqauthenticatorSelectionResidentKey = urlParams.get('authenticatorSelectionResidentKey');
+      if (urlParams.get("authenticatorSelectionResidentKey")) {
+        this.reqauthenticatorSelectionResidentKey = urlParams.get(
+          "authenticatorSelectionResidentKey"
+        );
       }
-      if (urlParams.get('authenticatorSelectionUserVerification')) {
-        this.reqauthenticatorSelectionUserVerification = urlParams.get('authenticatorSelectionUserVerification');
+      if (urlParams.get("authenticatorSelectionUserVerification")) {
+        this.reqauthenticatorSelectionUserVerification = urlParams.get(
+          "authenticatorSelectionUserVerification"
+        );
       }
-      if (urlParams.get('attestation')) this.reqAttestation = urlParams.get('attestation');
-      if (urlParams.get('attestationFormats')) {
+      if (urlParams.get("attestation"))
+        this.reqAttestation = urlParams.get("attestation");
+      if (urlParams.get("attestationFormats")) {
         try {
-          this.reqAttestationFormats = JSON.parse(urlParams.get('attestationFormats'));
+          this.reqAttestationFormats = JSON.parse(
+            urlParams.get("attestationFormats")
+          );
         } catch (e) {
-          console.warn('Failed to parse attestationFormats:', e);
+          console.warn("Failed to parse attestationFormats:", e);
         }
       }
-      if (urlParams.get('timeout')) this.reqTimeout = parseInt(urlParams.get('timeout'));
-      if (urlParams.get('challenge')) this.reqChallenge = urlParams.get('challenge');
-      if (urlParams.get('excludeCredentials')) {
+      if (urlParams.get("timeout"))
+        this.reqTimeout = parseInt(urlParams.get("timeout"));
+      if (urlParams.get("challenge"))
+        this.reqChallenge = urlParams.get("challenge");
+      if (urlParams.get("excludeCredentials")) {
         try {
-          this.reqExcludeCredentials = JSON.parse(urlParams.get('excludeCredentials'));
+          this.reqExcludeCredentials = JSON.parse(
+            urlParams.get("excludeCredentials")
+          );
         } catch (e) {
-          console.warn('Failed to parse excludeCredentials:', e);
+          console.warn("Failed to parse excludeCredentials:", e);
         }
       }
-      if (urlParams.get('hints')) {
+      if (urlParams.get("hints")) {
         try {
-          this.reqHints = JSON.parse(urlParams.get('hints'));
+          this.reqHints = JSON.parse(urlParams.get("hints"));
         } catch (e) {
-          console.warn('Failed to parse hints:', e);
+          console.warn("Failed to parse hints:", e);
         }
       }
-      if (urlParams.get('extensions')) this.reqExtensions = urlParams.get('extensions');
-      
+      if (urlParams.get("extensions"))
+        this.reqExtensions = urlParams.get("extensions");
+
       // Set conditional:meditation flag
       this.conditionalMeditation = true;
-      
+
       // Clear parameters from URL
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
-      
+
       // Login completion message
       this.$buefy.toast.open({
-        message: `Login completed: ${urlParams.get('email')} - Starting conditional:meditation passkey creation`,
-        type: 'is-success',
-        duration: 3000
+        message: `Login completed: ${urlParams.get(
+          "email"
+        )} - Starting conditional:meditation passkey creation`,
+        type: "is-success",
+        duration: 3000,
       });
-      
+
       // Execute conditional meditation API after short delay
       setTimeout(() => {
         this.executeConditionalMeditation();
       }, 1000);
     },
-    
+
     async executeConditionalMeditation() {
       try {
         // Reset previous results
         this.errorType = "";
         this.errorMessage = "";
         this.createResponse = {};
-        
-        console.log('🔄 Starting conditional:meditation passkey creation');
-        
+
+        console.log("🔄 Starting conditional:meditation passkey creation");
+
         if (!navigator.credentials) {
-          throw new Error('navigator.credentials is not available. Please use HTTPS or a supported browser.');
+          throw new Error(
+            "navigator.credentials is not available. Please use HTTPS or a supported browser."
+          );
         }
-        
+
         // Process challenge and userId
         let challenge;
         try {
           if (this.reqChallenge && this.reqChallenge.trim()) {
-            const hexString = this.reqChallenge.replace(/\s+/g, '');
+            const hexString = this.reqChallenge.replace(/\s+/g, "");
             if (hexString.match(/^[0-9a-fA-F]+$/)) {
-              challenge = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+              challenge = new Uint8Array(
+                hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+              );
             } else {
-              throw new Error('Invalid hex format');
+              throw new Error("Invalid hex format");
             }
           } else {
             challenge = require("crypto").randomBytes(32);
           }
         } catch (e) {
-          console.warn('Challenge parsing failed, generating new challenge:', e.message);
+          console.warn(
+            "Challenge parsing failed, generating new challenge:",
+            e.message
+          );
           challenge = require("crypto").randomBytes(32);
         }
-        
+
         let userId;
         try {
           if (this.reqUserId && this.reqUserId.trim()) {
-            const hexString = this.reqUserId.replace(/\s+/g, '');
+            const hexString = this.reqUserId.replace(/\s+/g, "");
             if (hexString.match(/^[0-9a-fA-F]+$/)) {
-              userId = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+              userId = new Uint8Array(
+                hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+              );
             } else {
-              throw new Error('Invalid hex format');
+              throw new Error("Invalid hex format");
             }
           } else {
-            userId = Buffer.from(this.reqUserId || 'default-user-id', 'hex');
+            userId = Buffer.from(this.reqUserId || "default-user-id", "hex");
           }
         } catch (e) {
-          console.warn('UserId parsing failed, using default value:', e.message);
-          userId = Buffer.from(this.reqUserId || 'default-user-id', 'hex');
+          console.warn(
+            "UserId parsing failed, using default value:",
+            e.message
+          );
+          userId = Buffer.from(this.reqUserId || "default-user-id", "hex");
         }
-        
-        // Build request using same logic as buildCreateRequest
+
+        // Build request using same logic as buildCreateRequest (ORIGINAL IMPLEMENTATION - COMMENTED OUT)
+        /*
         const createOptions = {
           publicKey: {
             rp: {
@@ -1098,42 +1132,80 @@ export default {
         if (this.reqExtensions.length != 0) {
           createOptions.publicKey.extensions = JSON.parse(this.reqExtensions);
         }
-        
+        */
+
+        // NEW IMPLEMENTATION - MATCHING autoupgradetest PARAMETERS EXACTLY
+        const createOptions = {
+          publicKey: {
+            rp: {
+              name: "パスキーテストサイト",
+              id:
+                window.location.hostname === "localhost"
+                  ? "localhost"
+                  : window.location.hostname,
+            },
+            user: {
+              id: new TextEncoder().encode(this.reqUserName || "default-user"),
+              name: this.reqUserName || "default-user",
+              displayName: this.reqUserName || "default-user",
+            },
+            challenge: challenge,
+            pubKeyCredParams: [
+              { alg: -7, type: "public-key" }, // ES256
+              { alg: -257, type: "public-key" }, // RS256
+            ],
+            timeout: 60000,
+            authenticatorSelection: {
+              authenticatorAttachment: "platform",
+              userVerification: "preferred",
+              residentKey: "preferred",
+            },
+            attestation: "none",
+          },
+          // Conditional Mediation を使用
+          mediation: "conditional",
+        };
+
         console.log("conditional:meditation Create Request", createOptions);
-        
+
         // Create passkey with conditional meditation
         const credential = await navigator.credentials.create(createOptions);
-        
+
         console.log("conditional:meditation Create Response", credential);
-        
+
         // Set result in same format as normal createResponse
         this.createResponse = credential;
-        this.createResponse.getClientExtensionResults = credential.getClientExtensionResults();
-        if (this.createResponse.response && this.createResponse.response.getTransports) {
-          this.createResponse.response.getTransports = credential.response.getTransports();
+        this.createResponse.getClientExtensionResults =
+          credential.getClientExtensionResults();
+        if (
+          this.createResponse.response &&
+          this.createResponse.response.getTransports
+        ) {
+          this.createResponse.response.getTransports =
+            credential.response.getTransports();
         } else {
-          this.createResponse.response.getTransports = "getTransports() is undefined";
+          this.createResponse.response.getTransports =
+            "getTransports() is undefined";
         }
-        
+
         this.$buefy.toast.open({
-          message: 'conditional:meditation passkey creation succeeded!',
-          type: 'is-success',
-          duration: 4000
+          message: "conditional:meditation passkey creation succeeded!",
+          type: "is-success",
+          duration: 4000,
         });
-        
       } catch (error) {
         console.log("conditional:meditation Create Error", error);
         this.errorType = error.name;
         this.errorMessage = error.message;
-        
+
         this.$buefy.toast.open({
           message: `conditional:meditation passkey creation failed: ${error.message}`,
-          type: 'is-danger',
-          duration: 4000
+          type: "is-danger",
+          duration: 4000,
         });
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

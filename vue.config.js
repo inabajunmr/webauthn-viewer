@@ -4,6 +4,7 @@ module.exports = defineConfig({
   transpileDependencies: true,
   publicPath: '/webauthn-viewer/',
   outputDir: 'docs',
+  lintOnSave: false,
   configureWebpack: {
     resolve: {
       fallback: {
