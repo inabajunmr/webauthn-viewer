@@ -1072,19 +1072,11 @@ export default {
           mediation: "conditional"
         };
         
-        // Replace user values with autoupgradetest working values, keep challenge as original
-        console.log("🔧 Replacing user values with autoupgradetest fixed values, keeping original challenge");
-        
-        // Keep original challenge (from buildCreateRequest)
-        console.log("✅ Using original challenge from buildCreateRequest");
-        
-        // Fixed user ID - simple email like autoupgradetest
-        const testEmail = "aaaa@aaa";
-        createOptions.publicKey.user.id = new TextEncoder().encode(testEmail);
-        createOptions.publicKey.user.name = testEmail;
-        createOptions.publicKey.user.displayName = testEmail;
-        
-        console.log("✅ User values replaced with fixed autoupgradetest values, challenge kept original");
+        // Keep all original values from buildCreateRequest
+        console.log("✅ Using all original values from buildCreateRequest for conditional mediation");
+        console.log("  - Challenge: original buildCreateRequest value");
+        console.log("  - User ID: original buildCreateRequest value");
+        console.log("  - User name/displayName: original buildCreateRequest values");
         
         console.log("🔧 Fixed createOptions:", createOptions);
         
