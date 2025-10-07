@@ -841,8 +841,8 @@ export default {
         });
     },
     redirectToLogin() {
-      // Prepare current settings as query parameters
-      const params = {
+      // Prepare current settings as query parameters, excluding null/empty values
+      const rawParams = {
         rpName: this.reqRpName,
         rpId: this.reqRpid,
         rpIcon: this.reqRpIcon,
@@ -867,6 +867,17 @@ export default {
         hints: JSON.stringify(this.reqHints),
         extensions: this.reqExtensions,
       };
+      
+      // Filter out null, undefined, empty string values
+      const params = {};
+      Object.keys(rawParams).forEach(key => {
+        const value = rawParams[key];
+        if (value !== null && value !== undefined && value !== "" && value !== "null") {
+          params[key] = value;
+        }
+      });
+      
+      console.log("🔧 Filtered params (nulls removed):", params);
 
       // Navigate to static login page
       const queryString = new URLSearchParams(params).toString();
@@ -943,7 +954,8 @@ export default {
       if (queryParams.authenticatorSelectionAuthenticationAttachment) {
         this.reqauthenticatorSelectionAuthenticationAttachment = queryParams.authenticatorSelectionAuthenticationAttachment;
       }
-      if (queryParams.authenticatorSelectionRequireResidentKey) {
+      // Only set requireResidentKey if it exists in query params and is not "null"
+      if (queryParams.authenticatorSelectionRequireResidentKey && queryParams.authenticatorSelectionRequireResidentKey !== "null") {
         this.reqauthenticatorSelectionRequireResidentKey = queryParams.authenticatorSelectionRequireResidentKey;
       }
       if (queryParams.authenticatorSelectionResidentKey) {
