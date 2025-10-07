@@ -1029,6 +1029,23 @@ export default {
           // Add conditional mediation parameter
           mediation: "conditional"
         };
+        
+        // Fix problematic values for conditional mediation
+        console.log("🔧 Fixing authenticatorSelection for conditional mediation");
+        createOptions.publicKey.authenticatorSelection = {
+          authenticatorAttachment: "platform",
+          userVerification: "preferred", 
+          residentKey: "preferred"
+          // Remove requireResidentKey to avoid "null" string issue
+        };
+        
+        // Also fix attestation for conditional mediation
+        createOptions.publicKey.attestation = "none";
+        
+        // Remove extensions that might cause issues
+        delete createOptions.publicKey.extensions;
+        
+        console.log("🔧 Fixed createOptions:", createOptions);
 
         console.log("conditional:meditation Create Request", createOptions);
         
