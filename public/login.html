@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - WebAuthn Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+        }
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .title {
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        .field {
+            margin-bottom: 20px;
+        }
+        .notification {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .back-link {
+            cursor: pointer;
+            color: #3273dc;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        #log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-form">
+            <h1 class="title has-text-centered">Login</h1>
+            <div class="subtitle has-text-centered has-text-grey">
+                conditional:meditation flow demo page
+            </div>
+            
+            <form id="loginForm">
+                <div class="field">
+                    <label class="label">User ID</label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            id="email"
+                            required
+                            autocomplete="username"
+                            placeholder="Enter any user ID"
+                        />
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label class="label">Password</label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="password"
+                            id="password"
+                            required
+                            autocomplete="current-password"
+                            placeholder="Password"
+                        />
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <div class="control">
+                        <button 
+                            type="submit" 
+                            id="loginBtn"
+                            class="button is-primary is-fullwidth is-medium"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="notification is-info is-light">
+                <p class="is-size-7">
+                    After login, passkey will be automatically created with configured parameters
+                </p>
+            </div>
+            
+            <div class="has-text-centered">
+                <a id="backLink" class="back-link">
+                    ← Back to WebAuthn Viewer
+                </a>
+            </div>
+
+            <!-- Login completed section - initially hidden -->
+            <div id="passkeySection" class="is-hidden">
+                <hr>
+                <h2 class="subtitle">パスキー自動作成</h2>
+                <div id="passkeyStatus" class="notification">
+                    <p id="statusText">ページをクリックするとパスキー作成を開始します</p>
+                </div>
+                
+                <div class="buttons">
+                    <button id="manualCreateBtn" class="button is-info" disabled>
+                        手動でパスキー作成
+                    </button>
+                </div>
+
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            const queryParams = {};
+            for (const [key, value] of params.entries()) {
+                queryParams[key] = value;
+            }
+            return queryParams;
+        }
+
+        // Log function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Update status display
+        function updateStatus(type, message, className) {
+            const statusDiv = document.getElementById('passkeyStatus');
+            const statusText = document.getElementById('statusText');
+            
+            // Reset classes
+            statusDiv.className = 'notification';
+            
+            // Add appropriate class
+            switch(type) {
+                case 'success':
+                    statusDiv.classList.add('is-success');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('is-danger');
+                    break;
+                case 'pending':
+                    statusDiv.classList.add('is-warning');
+                    break;
+                case 'not-supported':
+                    statusDiv.classList.add('is-light');
+                    break;
+            }
+            
+            statusText.textContent = message;
+        }
+
+        // Generate random challenge
+        function generateChallenge() {
+            return crypto.getRandomValues(new Uint8Array(32));
+        }
+
+        // Get user info from URL parameters
+        function getUserInfo() {
+            const params = getQueryParams();
+            return {
+                email: params.userName || 'test@example.com'
+            };
+        }
+
+        // Check WebAuthn support
+        function checkWebAuthnSupport() {
+            if (!window.PublicKeyCredential) {
+                log('❌ WebAuthn is not supported in this browser');
+                return false;
+            }
+
+            log('✅ WebAuthn is supported');
+
+            // Check for Conditional Mediation support
+            if (PublicKeyCredential.isConditionalMediationAvailable) {
+                PublicKeyCredential.isConditionalMediationAvailable().then(available => {
+                    if (available) {
+                        log('✅ Conditional Mediation がサポートされています');
+                    } else {
+                        log('⚠️ Conditional Mediation はサポートされていません');
+                    }
+                });
+            } else {
+                log('⚠️ Conditional Mediation のサポート確認ができません');
+            }
+
+            return true;
+        }
+
+        // Create passkey with conditional mediation
+        async function createPasskeyConditional(userInfo) {
+            try {
+                log('🔄 Conditional Mediation でパスキー作成を試行中...');
+
+                const challenge = generateChallenge();
+                const userId = new TextEncoder().encode(userInfo.email);
+
+                const createOptions = {
+                    publicKey: {
+                        rp: {
+                            name: "パスキーテストサイト",
+                            id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
+                        },
+                        user: {
+                            id: userId,
+                            name: userInfo.email,
+                            displayName: userInfo.email
+                        },
+                        challenge: challenge,
+                        pubKeyCredParams: [
+                            { alg: -7, type: "public-key" },  // ES256
+                            { alg: -257, type: "public-key" } // RS256
+                        ],
+                        timeout: 60000,
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "preferred",
+                            residentKey: "preferred"
+                        },
+                        attestation: "none"
+                    },
+                    // Conditional Mediation を使用
+                    mediation: "conditional"
+                };
+
+                log(`📋 作成オプション: ${JSON.stringify(createOptions, null, 2)}`);
+
+                const credential = await navigator.credentials.create(createOptions);
+                
+                if (credential) {
+                    log('✅ パスキーが正常に作成されました（Conditional Mediation）');
+                    log(`🆔 Credential ID: ${credential.id}`);
+                    updateStatus('success', 'パスキーが自動的に作成されました！', 'status-success');
+                    return credential;
+                } else {
+                    throw new Error('Credential creation returned null');
+                }
+
+            } catch (error) {
+                log(`❌ Conditional Mediation でのパスキー作成に失敗: ${error.message}`);
+                
+                if (error.name === 'NotAllowedError') {
+                    log('ℹ️ ユーザーがキャンセルしたか、条件が満たされませんでした');
+                    updateStatus('error', 'パスキーの自動作成が許可されませんでした', 'status-error');
+                } else if (error.name === 'NotSupportedError') {
+                    log('ℹ️ Conditional Mediation がサポートされていません');
+                    updateStatus('not-supported', 'パスキーの自動作成はサポートされていません', 'status-not-supported');
+                } else {
+                    updateStatus('error', `パスキー作成エラー: ${error.message}`, 'status-error');
+                }
+
+                return null;
+            }
+        }
+
+        // Manual passkey creation
+        async function createPasskeyManual(userInfo) {
+            try {
+                log('🔄 手動でパスキー作成を試行中...');
+
+                const challenge = generateChallenge();
+                const userId = new TextEncoder().encode(userInfo.email);
+
+                const createOptions = {
+                    publicKey: {
+                        rp: {
+                            name: "パスキーテストサイト",
+                            id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
+                        },
+                        user: {
+                            id: userId,
+                            name: userInfo.email,
+                            displayName: userInfo.email
+                        },
+                        challenge: challenge,
+                        pubKeyCredParams: [
+                            { alg: -7, type: "public-key" },
+                            { alg: -257, type: "public-key" }
+                        ],
+                        timeout: 60000,
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "preferred",
+                            residentKey: "preferred"
+                        },
+                        attestation: "none"
+                    }
+                };
+
+                const credential = await navigator.credentials.create(createOptions);
+                
+                if (credential) {
+                    log('✅ パスキーが手動で作成されました');
+                    log(`🆔 Credential ID: ${credential.id}`);
+                    updateStatus('success', 'パスキーが作成されました！', 'status-success');
+                }
+
+            } catch (error) {
+                log(`❌ 手動パスキー作成に失敗: ${error.message}`);
+                updateStatus('error', `パスキー作成エラー: ${error.message}`, 'status-error');
+            }
+        }
+
+        // Setup conditional passkey creation
+        async function setupConditionalPasskey(userInfo) {
+            // Wait for page focus if not focused
+            if (!document.hasFocus()) {
+                log('⏳ ページのフォーカスを待機中...');
+                await new Promise(resolve => {
+                    const checkFocus = () => {
+                        if (document.hasFocus()) {
+                            resolve();
+                        } else {
+                            setTimeout(checkFocus, 100);
+                        }
+                    };
+                    checkFocus();
+                });
+            }
+
+            log('✅ ページがフォーカスされました');
+            
+            // Wait a bit more then try conditional mediation
+            setTimeout(async () => {
+                const credential = await createPasskeyConditional(userInfo);
+                
+                if (!credential) {
+                    log('ℹ️ 手動でパスキーを作成してください');
+                }
+            }, 500);
+        }
+
+        // Initialize conditional mediation on user interaction
+        function initConditionalOnInteraction(userInfo) {
+            const startConditional = async () => {
+                log('👆 ユーザーインタラクションを検出しました');
+                document.removeEventListener('click', startConditional);
+                document.removeEventListener('focus', startConditional);
+                document.removeEventListener('keydown', startConditional);
+                
+                await setupConditionalPasskey(userInfo);
+            };
+
+            document.addEventListener('click', startConditional, { once: true });
+            document.addEventListener('focus', startConditional, { once: true });
+            document.addEventListener('keydown', startConditional, { once: true });
+            
+            updateStatus('pending', 'ページをクリックするとパスキー作成を開始します', 'status-pending');
+        }
+
+        // Handle login completion
+        function handleLoginCompletion() {
+            const userInfo = getUserInfo();
+            
+            // Show passkey section
+            document.getElementById('passkeySection').classList.remove('is-hidden');
+            
+            log('📱 ログインが完了しました');
+            log(`👤 ユーザー: ${userInfo.email}`);
+
+            // WebAuthn support check
+            if (!checkWebAuthnSupport()) {
+                updateStatus('not-supported', 'このブラウザはWebAuthnをサポートしていません', 'status-not-supported');
+                return;
+            }
+
+            // Enable manual create button
+            const manualBtn = document.getElementById('manualCreateBtn');
+            manualBtn.disabled = false;
+            manualBtn.addEventListener('click', () => createPasskeyManual(userInfo));
+
+            // Initialize conditional mediation on user interaction
+            initConditionalOnInteraction(userInfo);
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (!email || !password) {
+                alert('Please enter both User ID and password');
+                return;
+            }
+            
+            loginBtn.classList.add('is-loading');
+            loginBtn.disabled = true;
+            
+            // Simulate login delay
+            setTimeout(() => {
+                // Prepare parameters for redirect back to Vue app
+                const currentParams = getQueryParams();
+                const params = new URLSearchParams({
+                    ...currentParams,
+                    email: email,
+                    loginCompleted: 'true'
+                });
+                
+                // Redirect back to main app instead of handling here
+                window.location.href = `/#/?${params.toString()}`;
+            }, 500);
+        });
+
+        // Handle back button
+        document.getElementById('backLink').addEventListener('click', function() {
+            window.location.href = '/';
+        });
+
+        // Check if we should auto-start passkey creation (for testing static page directly)
+        window.addEventListener('load', () => {
+            const params = getQueryParams();
+            if (params.loginCompleted === 'true') {
+                // If we're on this page with loginCompleted, show passkey creation
+                handleLoginCompletion();
+            }
+        });
+    </script>
+</body>
+</html>

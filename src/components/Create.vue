@@ -866,11 +866,9 @@ export default {
         extensions: this.reqExtensions,
       };
 
-      // Navigate to login screen using Vue Router
-      this.$router.push({
-        name: "Login",
-        query: params,
-      });
+      // Navigate to static login page
+      const queryString = new URLSearchParams(params).toString();
+      window.location.href = `/login.html?${queryString}`;
     },
     generateRandomUserId() {
       this.reqUserId = require("crypto").randomBytes(32).toString("hex");
