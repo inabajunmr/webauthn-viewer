@@ -788,6 +788,8 @@ export default {
     },
   },
   mounted() {
+    console.log("🏗️ Create component mounted");
+    console.log("🏗️ Current route:", this.$route);
     this.checkMeditationResult();
   },
   methods: {
@@ -888,15 +890,25 @@ export default {
     checkMeditationResult() {
       // Check URL parameters from Vue Router
       const routeQuery = this.$route.query;
+      
+      console.log("🔍 checkMeditationResult called");
+      console.log("🔍 Route query:", routeQuery);
+      console.log("🔍 loginCompleted value:", routeQuery.loginCompleted);
+      console.log("🔍 loginCompleted type:", typeof routeQuery.loginCompleted);
 
       // Execute conditional meditation API if login completed
       if (routeQuery.loginCompleted === "true") {
+        console.log("✅ Login completed detected, calling handleLoginCompleted");
         this.handleLoginCompleted(routeQuery);
         return;
+      } else {
+        console.log("❌ Login completed not detected");
       }
     },
 
     handleLoginCompleted(queryParams) {
+      console.log("🎯 handleLoginCompleted called with:", queryParams);
+      
       // Restore configuration parameters
       if (queryParams.rpName) this.reqRpName = queryParams.rpName;
       if (queryParams.rpId) this.reqRpid = queryParams.rpId;
@@ -977,6 +989,7 @@ export default {
       });
 
       // Wait for user interaction then start conditional mediation
+      console.log("🚀 About to call initConditionalOnInteraction");
       this.initConditionalOnInteraction();
     },
 
@@ -1193,6 +1206,8 @@ export default {
 
     // Wait for user interaction before conditional mediation
     initConditionalOnInteraction() {
+      console.log("📱 initConditionalOnInteraction called");
+      
       const startConditional = async () => {
         console.log('👆 ユーザーインタラクションを検出しました');
         document.removeEventListener('click', startConditional);
