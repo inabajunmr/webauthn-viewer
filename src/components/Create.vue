@@ -995,6 +995,10 @@ export default {
 
     async executeConditionalMeditation() {
       try {
+        console.log("🔄 executeConditionalMeditation called");
+        this.logUserActivationState("executeConditionalMeditation start");
+        this.logBrowserState();
+        
         // Reset previous results
         this.errorType = "";
         this.errorMessage = "";
@@ -1165,6 +1169,10 @@ export default {
         };
 
         console.log("conditional:meditation Create Request", createOptions);
+        
+        // Final user activation check before API call
+        this.logUserActivationState("immediately before navigator.credentials.create");
+        console.log("🚀 Calling navigator.credentials.create with conditional mediation...");
 
         // Create passkey with conditional meditation
         const credential = await navigator.credentials.create(createOptions);
@@ -1207,9 +1215,12 @@ export default {
     // Wait for user interaction before conditional mediation
     initConditionalOnInteraction() {
       console.log("📱 initConditionalOnInteraction called");
+      this.logUserActivationState("initConditionalOnInteraction");
       
-      const startConditional = async () => {
-        console.log('👆 ユーザーインタラクションを検出しました');
+      const startConditional = async (event) => {
+        console.log('👆 ユーザーインタラクションを検出しました', event.type);
+        this.logUserActivationState(`startConditional - ${event.type}`);
+        
         document.removeEventListener('click', startConditional);
         document.removeEventListener('focus', startConditional);
         document.removeEventListener('keydown', startConditional);
@@ -1229,9 +1240,14 @@ export default {
     },
 
     async setupConditionalPasskey() {
+      console.log('🔧 setupConditionalPasskey called');
+      this.logUserActivationState("setupConditionalPasskey start");
+      
       // Wait for page focus if not focused
       if (!document.hasFocus()) {
         console.log('⏳ ページのフォーカスを待機中...');
+        this.logUserActivationState("waiting for focus");
+        
         await new Promise(resolve => {
           const checkFocus = () => {
             if (document.hasFocus()) {
@@ -1245,11 +1261,57 @@ export default {
       }
 
       console.log('✅ ページがフォーカスされました');
+      this.logUserActivationState("page focused");
       
       // Wait a bit more then start conditional mediation
       setTimeout(() => {
+        console.log('⏰ About to call executeConditionalMeditation after timeout');
+        this.logUserActivationState("before executeConditionalMeditation");
         this.executeConditionalMeditation();
       }, 500);
+    },
+
+    // Debug methods
+    logUserActivationState(context) {
+      console.log(`🔍 User Activation State (${context}):`);
+      
+      // Check if user activation APIs are available
+      if (navigator.userActivation) {
+        console.log(`  - hasBeenActive: ${navigator.userActivation.hasBeenActive}`);
+        console.log(`  - isActive: ${navigator.userActivation.isActive}`);
+      } else {
+        console.log(`  - navigator.userActivation: not supported`);
+      }
+      
+      // Check document state
+      console.log(`  - document.hasFocus(): ${document.hasFocus()}`);
+      console.log(`  - document.hidden: ${document.hidden}`);
+      console.log(`  - document.visibilityState: ${document.visibilityState}`);
+      
+      // Check timing
+      console.log(`  - performance.now(): ${performance.now()}`);
+      console.log(`  - context: ${context}`);
+    },
+
+    logBrowserState() {
+      console.log(`🌐 Browser State:`);
+      console.log(`  - User Agent: ${navigator.userAgent}`);
+      console.log(`  - Location: ${window.location.href}`);
+      console.log(`  - Origin: ${window.location.origin}`);
+      console.log(`  - Hostname: ${window.location.hostname}`);
+      console.log(`  - Protocol: ${window.location.protocol}`);
+      console.log(`  - IsSecureContext: ${window.isSecureContext}`);
+      
+      // WebAuthn support
+      console.log(`  - PublicKeyCredential: ${!!window.PublicKeyCredential}`);
+      if (window.PublicKeyCredential) {
+        console.log(`  - isUserVerifyingPlatformAuthenticatorAvailable: ${!!PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable}`);
+        console.log(`  - isConditionalMediationAvailable: ${!!PublicKeyCredential.isConditionalMediationAvailable}`);
+      }
+      
+      // Check if we're in an iframe
+      console.log(`  - window.top === window.self: ${window.top === window.self}`);
+      console.log(`  - window.parent === window: ${window.parent === window}`);
     },
   },
 };
