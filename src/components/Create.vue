@@ -886,103 +886,92 @@ export default {
     },
 
     checkMeditationResult() {
-      // Check URL parameters
-      const urlParams = new URLSearchParams(window.location.search);
+      // Check URL parameters from Vue Router
+      const routeQuery = this.$route.query;
 
       // Execute conditional meditation API if login completed
-      if (urlParams.get("loginCompleted") === "true") {
-        this.handleLoginCompleted(urlParams);
+      if (routeQuery.loginCompleted === "true") {
+        this.handleLoginCompleted(routeQuery);
         return;
       }
     },
 
-    handleLoginCompleted(urlParams) {
+    handleLoginCompleted(queryParams) {
       // Restore configuration parameters
-      if (urlParams.get("rpName")) this.reqRpName = urlParams.get("rpName");
-      if (urlParams.get("rpId")) this.reqRpid = urlParams.get("rpId");
-      if (urlParams.get("rpIcon")) this.reqRpIcon = urlParams.get("rpIcon");
-      if (urlParams.get("userId")) this.reqUserId = urlParams.get("userId");
-      if (urlParams.get("userName"))
-        this.reqUserName = urlParams.get("userName");
-      if (urlParams.get("userIcon"))
-        this.reqUserIcon = urlParams.get("userIcon");
-      if (urlParams.get("userDisplayName"))
-        this.reqUserDisplayName = urlParams.get("userDisplayName");
-      if (urlParams.get("pubKeyCredParams")) {
+      if (queryParams.rpName) this.reqRpName = queryParams.rpName;
+      if (queryParams.rpId) this.reqRpid = queryParams.rpId;
+      if (queryParams.rpIcon) this.reqRpIcon = queryParams.rpIcon;
+      if (queryParams.userId) this.reqUserId = queryParams.userId;
+      if (queryParams.userName)
+        this.reqUserName = queryParams.userName;
+      if (queryParams.userIcon)
+        this.reqUserIcon = queryParams.userIcon;
+      if (queryParams.userDisplayName)
+        this.reqUserDisplayName = queryParams.userDisplayName;
+      if (queryParams.pubKeyCredParams) {
         try {
           this.reqPubKeyCredParams = JSON.parse(
-            urlParams.get("pubKeyCredParams")
+            queryParams.pubKeyCredParams
           );
         } catch (e) {
           console.warn("Failed to parse pubKeyCredParams:", e);
         }
       }
-      if (urlParams.get("authenticatorSelectionAuthenticationAttachment")) {
-        this.reqauthenticatorSelectionAuthenticationAttachment = urlParams.get(
-          "authenticatorSelectionAuthenticationAttachment"
-        );
+      if (queryParams.authenticatorSelectionAuthenticationAttachment) {
+        this.reqauthenticatorSelectionAuthenticationAttachment = queryParams.authenticatorSelectionAuthenticationAttachment;
       }
-      if (urlParams.get("authenticatorSelectionRequireResidentKey")) {
-        this.reqauthenticatorSelectionRequireResidentKey = urlParams.get(
-          "authenticatorSelectionRequireResidentKey"
-        );
+      if (queryParams.authenticatorSelectionRequireResidentKey) {
+        this.reqauthenticatorSelectionRequireResidentKey = queryParams.authenticatorSelectionRequireResidentKey;
       }
-      if (urlParams.get("authenticatorSelectionResidentKey")) {
-        this.reqauthenticatorSelectionResidentKey = urlParams.get(
-          "authenticatorSelectionResidentKey"
-        );
+      if (queryParams.authenticatorSelectionResidentKey) {
+        this.reqauthenticatorSelectionResidentKey = queryParams.authenticatorSelectionResidentKey;
       }
-      if (urlParams.get("authenticatorSelectionUserVerification")) {
-        this.reqauthenticatorSelectionUserVerification = urlParams.get(
-          "authenticatorSelectionUserVerification"
-        );
+      if (queryParams.authenticatorSelectionUserVerification) {
+        this.reqauthenticatorSelectionUserVerification = queryParams.authenticatorSelectionUserVerification;
       }
-      if (urlParams.get("attestation"))
-        this.reqAttestation = urlParams.get("attestation");
-      if (urlParams.get("attestationFormats")) {
+      if (queryParams.attestation)
+        this.reqAttestation = queryParams.attestation;
+      if (queryParams.attestationFormats) {
         try {
           this.reqAttestationFormats = JSON.parse(
-            urlParams.get("attestationFormats")
+            queryParams.attestationFormats
           );
         } catch (e) {
           console.warn("Failed to parse attestationFormats:", e);
         }
       }
-      if (urlParams.get("timeout"))
-        this.reqTimeout = parseInt(urlParams.get("timeout"));
-      if (urlParams.get("challenge"))
-        this.reqChallenge = urlParams.get("challenge");
-      if (urlParams.get("excludeCredentials")) {
+      if (queryParams.timeout)
+        this.reqTimeout = parseInt(queryParams.timeout);
+      if (queryParams.challenge)
+        this.reqChallenge = queryParams.challenge;
+      if (queryParams.excludeCredentials) {
         try {
           this.reqExcludeCredentials = JSON.parse(
-            urlParams.get("excludeCredentials")
+            queryParams.excludeCredentials
           );
         } catch (e) {
           console.warn("Failed to parse excludeCredentials:", e);
         }
       }
-      if (urlParams.get("hints")) {
+      if (queryParams.hints) {
         try {
-          this.reqHints = JSON.parse(urlParams.get("hints"));
+          this.reqHints = JSON.parse(queryParams.hints);
         } catch (e) {
           console.warn("Failed to parse hints:", e);
         }
       }
-      if (urlParams.get("extensions"))
-        this.reqExtensions = urlParams.get("extensions");
+      if (queryParams.extensions)
+        this.reqExtensions = queryParams.extensions;
 
       // Set conditional:meditation flag
       this.conditionalMeditation = true;
 
       // Clear parameters from URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      this.$router.replace({ query: {} });
 
       // Login completion message
       this.$buefy.toast.open({
-        message: `Login completed: ${urlParams.get(
-          "email"
-        )} - Starting conditional:meditation passkey creation`,
+        message: `Login completed: ${queryParams.email} - Starting conditional:meditation passkey creation`,
         type: "is-success",
         duration: 3000,
       });
