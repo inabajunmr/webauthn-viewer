@@ -909,6 +909,17 @@ export default {
     handleLoginCompleted(queryParams) {
       console.log("🎯 handleLoginCompleted called with:", queryParams);
       
+      // Debug: Log specific problematic parameters
+      console.log("🔍 Query parameter investigation:");
+      console.log("  - Original reqChallenge before login:", this.reqChallenge);
+      console.log("  - Query challenge:", queryParams.challenge);
+      console.log("  - Query challenge type:", typeof queryParams.challenge);
+      console.log("  - Original reqUserId before login:", this.reqUserId);
+      console.log("  - Query userId:", queryParams.userId);
+      console.log("  - Query userId type:", typeof queryParams.userId);
+      console.log("  - Query userName:", queryParams.userName);
+      console.log("  - Query userDisplayName:", queryParams.userDisplayName);
+      
       // Restore configuration parameters
       if (queryParams.rpName) this.reqRpName = queryParams.rpName;
       if (queryParams.rpId) this.reqRpid = queryParams.rpId;
@@ -1016,8 +1027,27 @@ export default {
         console.log("🔄 Using buildCreateRequest logic for conditional meditation");
         console.log("🔄 Current req values:");
         console.log("  - reqChallenge:", this.reqChallenge);
+        console.log("  - reqChallenge type:", typeof this.reqChallenge);
         console.log("  - reqUserId:", this.reqUserId);
+        console.log("  - reqUserId type:", typeof this.reqUserId);
         console.log("  - reqUserName:", this.reqUserName);
+        
+        // Test Buffer conversion explicitly
+        try {
+          const challengeBuffer = Buffer.from(this.reqChallenge, "hex");
+          console.log("🔍 Challenge Buffer conversion:");
+          console.log("  - Input:", this.reqChallenge);
+          console.log("  - Output:", challengeBuffer);
+          console.log("  - Output type:", challengeBuffer.constructor.name);
+          
+          const userIdBuffer = Buffer.from(this.reqUserId, "hex");
+          console.log("🔍 UserId Buffer conversion:");
+          console.log("  - Input:", this.reqUserId);
+          console.log("  - Output:", userIdBuffer);
+          console.log("  - Output type:", userIdBuffer.constructor.name);
+        } catch (e) {
+          console.error("❌ Buffer conversion failed:", e);
+        }
         
         // Build request using exactly the same logic as buildCreateRequest computed property
         const baseRequest = this.buildCreateRequest;
@@ -1030,22 +1060,18 @@ export default {
           mediation: "conditional"
         };
         
-        // Fix problematic values for conditional mediation
-        console.log("🔧 Fixing authenticatorSelection for conditional mediation");
-        createOptions.publicKey.authenticatorSelection = {
-          authenticatorAttachment: "platform",
-          userVerification: "preferred", 
-          residentKey: "preferred"
-          // Remove requireResidentKey to avoid "null" string issue
-        };
-        
-        // Also fix attestation for conditional mediation
-        createOptions.publicKey.attestation = "none";
-        
-        // Remove extensions that might cause issues
-        delete createOptions.publicKey.extensions;
+        console.log("✅ Using buildCreateRequest values as-is for conditional mediation");
         
         console.log("🔧 Fixed createOptions:", createOptions);
+        
+        // Detailed logging of critical parameters
+        console.log("🔍 Detailed parameter analysis:");
+        console.log("  - pubKeyCredParams:", createOptions.publicKey.pubKeyCredParams);
+        console.log("  - authenticatorSelection:", createOptions.publicKey.authenticatorSelection);
+        console.log("  - attestation:", createOptions.publicKey.attestation);
+        console.log("  - user.id length:", createOptions.publicKey.user.id.length);
+        console.log("  - user.name:", createOptions.publicKey.user.name);
+        console.log("  - challenge length:", createOptions.publicKey.challenge.length);
 
         console.log("conditional:meditation Create Request", createOptions);
         
