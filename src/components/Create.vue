@@ -1072,11 +1072,11 @@ export default {
           mediation: "conditional"
         };
         
-        // Replace binary values with autoupgradetest working values
-        console.log("🔧 Replacing binary values with autoupgradetest fixed values");
+        // Replace user values with autoupgradetest working values, keep challenge as original
+        console.log("🔧 Replacing user values with autoupgradetest fixed values, keeping original challenge");
         
-        // Fixed challenge from autoupgradetest
-        createOptions.publicKey.challenge = new Uint8Array([52, 51, 124, 94, 243, 80, 215, 230, 6, 172, 142, 76, 110, 107, 44, 128, 122, 207, 210, 217, 165, 157, 164, 118, 93, 22, 147, 28, 84, 202, 199, 80]);
+        // Keep original challenge (from buildCreateRequest)
+        console.log("✅ Using original challenge from buildCreateRequest");
         
         // Fixed user ID - simple email like autoupgradetest
         const testEmail = "aaaa@aaa";
@@ -1084,7 +1084,7 @@ export default {
         createOptions.publicKey.user.name = testEmail;
         createOptions.publicKey.user.displayName = testEmail;
         
-        console.log("✅ Binary values replaced with fixed autoupgradetest values");
+        console.log("✅ User values replaced with fixed autoupgradetest values, challenge kept original");
         
         console.log("🔧 Fixed createOptions:", createOptions);
         
