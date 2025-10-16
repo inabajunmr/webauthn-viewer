@@ -2,7 +2,24 @@
   <div class="container is-size-7">
     <div class="columns">
       <div class="column is-one-third">
-        <h3 class="title">Request</h3>
+        <div class="level is-mobile is-align-items-center">
+          <div class="level-left">
+            <div class="level-item">
+              <h3 class="title">Request</h3>
+            </div>
+          </div>
+          <div class="level-right">
+            <div class="level-item">
+              <button
+                type="button"
+                class="button is-small is-light"
+                @click="saveRequestToClipboard"
+              >
+                Save Request to Clipboard
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="columns">
           <div class="column">
             <div class="field">
@@ -603,6 +620,28 @@
 
 <script>
 export default {
+  requestQueryKeys: [
+    "rpName",
+    "rpId",
+    "rpIcon",
+    "userId",
+    "userName",
+    "userDisplayName",
+    "userIcon",
+    "attestation",
+    "attestationFormats",
+    "timeout",
+    "challenge",
+    "pubKeyCredParams",
+    "authenticatorSelectionAuthenticationAttachment",
+    "authenticatorSelectionRequireResidentKey",
+    "authenticatorSelectionResidentKey",
+    "authenticatorSelectionUserVerification",
+    "excludeCredentials",
+    "hints",
+    "extensions",
+    "conditionalMeditation",
+  ],
   data() {
     return {
       errorType: "",
@@ -787,12 +826,388 @@ export default {
       return result;
     },
   },
+  watch: {
+    "$route.query": {
+      handler(query) {
+        this.restoreRequestFromQuery(query);
+      },
+      immediate: true,
+    },
+  },
   mounted() {
     console.log("🏗️ Create component mounted");
     console.log("🏗️ Current route:", this.$route);
     this.checkMeditationResult();
   },
   methods: {
+    collectRequestQueryParams() {
+      const params = {};
+      const pushValue = (key, value) => {
+        if (value === null || value === undefined) {
+          return;
+        }
+        if (typeof value === "boolean") {
+          if (value) {
+            params[key] = "true";
+          }
+          return;
+        }
+        if (Array.isArray(value)) {
+          const filtered = value.filter(
+            (item) =>
+              item !== null &&
+              item !== undefined &&
+              !(
+                typeof item === "string" &&
+                item.trim &&
+                item.trim().length === 0
+              )
+          );
+          if (filtered.length > 0) {
+            params[key] = filtered.map((item) => String(item));
+          }
+          return;
+        }
+        if (typeof value === "number") {
+          if (!Number.isNaN(value)) {
+            params[key] = value.toString();
+          }
+          return;
+        }
+        if (typeof value === "string") {
+          if (value.trim().length > 0) {
+            params[key] = value;
+          }
+          return;
+        }
+        params[key] = value;
+      };
+
+      pushValue("rpName", this.reqRpName);
+      pushValue("rpId", this.reqRpid);
+      pushValue("rpIcon", this.reqRpIcon);
+      pushValue("userId", this.reqUserId);
+      pushValue("userName", this.reqUserName);
+      pushValue("userDisplayName", this.reqUserDisplayName);
+      pushValue("userIcon", this.reqUserIcon);
+      pushValue(
+        "authenticatorSelectionAuthenticationAttachment",
+        this.reqauthenticatorSelectionAuthenticationAttachment
+      );
+      pushValue(
+        "authenticatorSelectionRequireResidentKey",
+        this.reqauthenticatorSelectionRequireResidentKey
+      );
+      pushValue(
+        "authenticatorSelectionResidentKey",
+        this.reqauthenticatorSelectionResidentKey
+      );
+      pushValue(
+        "authenticatorSelectionUserVerification",
+        this.reqauthenticatorSelectionUserVerification
+      );
+      pushValue("attestation", this.reqAttestation);
+      pushValue("attestationFormats", this.reqAttestationFormats);
+      pushValue("timeout", this.reqTimeout);
+      pushValue("challenge", this.reqChallenge);
+      pushValue("hints", this.reqHints);
+      pushValue("extensions", this.reqExtensions);
+      pushValue("conditionalMeditation", this.conditionalMeditation);
+
+      if (this.reqPubKeyCredParams.length > 0) {
+        const sanitized = this.reqPubKeyCredParams
+          .map((entry) => Object.assign({}, entry || {}))
+          .filter((entry) => {
+            const hasType =
+              entry.type !== undefined &&
+              entry.type !== null &&
+              entry.type !== "";
+            const hasAlg =
+              entry.alg !== undefined && entry.alg !== null && entry.alg !== "";
+            return hasType || hasAlg;
+          });
+        if (sanitized.length > 0) {
+          params.pubKeyCredParams = JSON.stringify(sanitized);
+        }
+      }
+
+      if (this.reqExcludeCredentials.length > 0) {
+        const sanitizedExclude = this.reqExcludeCredentials
+          .map((entry) => {
+            const copy = Object.assign({}, entry || {});
+            copy.transports = Array.isArray(copy.transports)
+              ? copy.transports
+              : copy.transports
+              ? [copy.transports]
+              : [];
+            return copy;
+          })
+          .filter((entry) => {
+            const hasId =
+              entry.id !== undefined && entry.id !== null && entry.id !== "";
+            const hasType =
+              entry.type !== undefined &&
+              entry.type !== null &&
+              entry.type !== "";
+            return hasId || hasType || entry.transports.length > 0;
+          });
+        if (sanitizedExclude.length > 0) {
+          params.excludeCredentials = JSON.stringify(sanitizedExclude);
+        }
+      }
+
+      return params;
+    },
+    async saveRequestToClipboard() {
+      const params = this.collectRequestQueryParams();
+      const managedKeys = this.$options.requestQueryKeys || [];
+
+      const url = new URL(window.location.href);
+      const searchParams = new URLSearchParams(url.search);
+
+      managedKeys.forEach((key) => {
+        searchParams.delete(key);
+      });
+
+      Object.keys(params).forEach((key) => {
+        const value = params[key];
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            searchParams.append(key, item);
+          });
+        } else {
+          searchParams.set(key, value);
+        }
+      });
+
+      url.search = searchParams.toString();
+
+      try {
+        await this.writeToClipboard(url.toString());
+        if (this.$buefy && this.$buefy.toast) {
+          this.$buefy.toast.open({
+            message: "URL copied to clipboard",
+            type: "is-success",
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to copy URL", error);
+        if (this.$buefy && this.$buefy.toast) {
+          this.$buefy.toast.open({
+            message: "Failed to copy URL",
+            type: "is-danger",
+            duration: 3000,
+          });
+        }
+      }
+    },
+    async writeToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      this.fallbackCopyText(text);
+    },
+    fallbackCopyText(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-1000px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+
+      const selection = document.getSelection();
+      const selectedRange =
+        selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+      textarea.focus();
+      textarea.select();
+
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textarea);
+
+      if (selectedRange && selection) {
+        selection.removeAllRanges();
+        selection.addRange(selectedRange);
+      }
+
+      if (!successful) {
+        throw new Error("execCommand copy failed");
+      }
+    },
+    restoreRequestFromQuery(query) {
+      if (!query || Object.keys(query).length === 0) {
+        return;
+      }
+
+      const pickSingle = (value) =>
+        Array.isArray(value) ? value[value.length - 1] : value;
+      const normalizeString = (raw) => {
+        if (raw === undefined || raw === null) {
+          return "";
+        }
+        const str = String(raw);
+        return str === "null" || str === "undefined" ? "" : str;
+      };
+      const toArray = (value) => {
+        if (Array.isArray(value)) {
+          return value.filter(
+            (item) =>
+              item !== null &&
+              item !== undefined &&
+              !(typeof item === "string" && item.trim().length === 0)
+          );
+        }
+        if (typeof value === "string" && value.trim().length > 0) {
+          return [value];
+        }
+        return [];
+      };
+
+      if (Object.prototype.hasOwnProperty.call(query, "rpName")) {
+        this.reqRpName = normalizeString(pickSingle(query.rpName));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "rpId")) {
+        this.reqRpid = normalizeString(pickSingle(query.rpId));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "rpIcon")) {
+        this.reqRpIcon = normalizeString(pickSingle(query.rpIcon));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "userId")) {
+        this.reqUserId = normalizeString(pickSingle(query.userId));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "userName")) {
+        this.reqUserName = normalizeString(pickSingle(query.userName));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "userDisplayName")) {
+        this.reqUserDisplayName = normalizeString(
+          pickSingle(query.userDisplayName)
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "userIcon")) {
+        this.reqUserIcon = normalizeString(pickSingle(query.userIcon));
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          query,
+          "authenticatorSelectionAuthenticationAttachment"
+        )
+      ) {
+        this.reqauthenticatorSelectionAuthenticationAttachment =
+          normalizeString(
+            pickSingle(query.authenticatorSelectionAuthenticationAttachment)
+          );
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          query,
+          "authenticatorSelectionRequireResidentKey"
+        )
+      ) {
+        this.reqauthenticatorSelectionRequireResidentKey = normalizeString(
+          pickSingle(query.authenticatorSelectionRequireResidentKey)
+        );
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          query,
+          "authenticatorSelectionResidentKey"
+        )
+      ) {
+        this.reqauthenticatorSelectionResidentKey = normalizeString(
+          pickSingle(query.authenticatorSelectionResidentKey)
+        );
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          query,
+          "authenticatorSelectionUserVerification"
+        )
+      ) {
+        this.reqauthenticatorSelectionUserVerification = normalizeString(
+          pickSingle(query.authenticatorSelectionUserVerification)
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "attestation")) {
+        this.reqAttestation = normalizeString(pickSingle(query.attestation));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "attestationFormats")) {
+        this.reqAttestationFormats = toArray(query.attestationFormats);
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "timeout")) {
+        const raw = pickSingle(query.timeout);
+        const parsed = parseInt(raw, 10);
+        this.reqTimeout = Number.isNaN(parsed) ? normalizeString(raw) : parsed;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "challenge")) {
+        this.reqChallenge = normalizeString(pickSingle(query.challenge));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "hints")) {
+        this.reqHints = toArray(query.hints);
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "extensions")) {
+        this.reqExtensions = normalizeString(pickSingle(query.extensions));
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(query, "conditionalMeditation")
+      ) {
+        const value = pickSingle(query.conditionalMeditation);
+        this.conditionalMeditation = value === "true" || value === true;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "pubKeyCredParams")) {
+        const value = pickSingle(query.pubKeyCredParams);
+        const parsed = this.safeParseJson(value, null);
+        if (Array.isArray(parsed)) {
+          this.reqPubKeyCredParams = parsed.map((entry) => {
+            const result = Object.assign({}, entry);
+            if (
+              result.type === undefined ||
+              result.type === null ||
+              result.type === ""
+            ) {
+              result.type = "public-key";
+            }
+            return result;
+          });
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "excludeCredentials")) {
+        const value = pickSingle(query.excludeCredentials);
+        const parsed = this.safeParseJson(value, null);
+        if (Array.isArray(parsed)) {
+          this.reqExcludeCredentials = parsed.map((entry) => {
+            const result = Object.assign({}, entry);
+            if (result.id === undefined || result.id === null) {
+              result.id = "";
+            }
+            if (result.type === undefined || result.type === null) {
+              result.type = "";
+            }
+            if (Array.isArray(result.transports)) {
+              result.transports = result.transports.slice();
+            } else if (result.transports) {
+              result.transports = [result.transports];
+            } else {
+              result.transports = [];
+            }
+            return result;
+          });
+        }
+      }
+    },
+    safeParseJson(value, fallback = null) {
+      if (typeof value !== "string") {
+        return fallback;
+      }
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Failed to parse JSON from query parameter:", error);
+        return fallback;
+      }
+    },
     create() {
       // reset
       this.errorType = "";

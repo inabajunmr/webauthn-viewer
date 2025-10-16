@@ -2,7 +2,24 @@
   <div class="container is-size-7">
     <div class="columns">
       <div class="column is-one-third">
-        <h3 class="title">Request</h3>
+        <div class="level is-mobile is-align-items-center">
+          <div class="level-left">
+            <div class="level-item">
+              <h3 class="title">Request</h3>
+            </div>
+          </div>
+          <div class="level-right">
+            <div class="level-item">
+              <button
+                type="button"
+                class="button is-small is-light"
+                @click="saveRequestToClipboard"
+              >
+                Save Request to Clipboard
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="field">
           <label class="label is-small">rpid</label>
           <div class="control">
@@ -316,6 +333,15 @@
 
 <script>
 export default {
+  requestQueryKeys: [
+    "rpid",
+    "allowCredentials",
+    "timeout",
+    "challenge",
+    "userVerification",
+    "hints",
+    "conditionalUi",
+  ],
   data() {
     return {
       errorType: "",
@@ -435,9 +461,258 @@ export default {
         this.abortController.abort();
         this.abortController = new AbortController();
       }
+    },
+    "$route.query": {
+      handler(query) {
+        this.restoreRequestFromQuery(query);
+      },
+      immediate: true,
     }
   },
   methods: {
+    collectRequestQueryParams() {
+      const params = {};
+      const pushValue = (key, value) => {
+        if (value === null || value === undefined) {
+          return;
+        }
+        if (typeof value === "boolean") {
+          if (value) {
+            params[key] = "true";
+          }
+          return;
+        }
+        if (Array.isArray(value)) {
+          const filtered = value.filter(
+            (item) =>
+              item !== null &&
+              item !== undefined &&
+              !(
+                typeof item === "string" &&
+                item.trim &&
+                item.trim().length === 0
+              )
+          );
+          if (filtered.length > 0) {
+            params[key] = filtered.map((item) => String(item));
+          }
+          return;
+        }
+        if (typeof value === "number") {
+          if (!Number.isNaN(value)) {
+            params[key] = value.toString();
+          }
+          return;
+        }
+        if (typeof value === "string") {
+          if (value.trim().length > 0) {
+            params[key] = value;
+          }
+          return;
+        }
+        params[key] = value;
+      };
+
+      pushValue("rpid", this.reqRpid);
+      pushValue("userVerification", this.reqUserVerification);
+      pushValue("timeout", this.reqTimeout);
+      pushValue("challenge", this.reqChallenge);
+      pushValue("hints", this.reqHints);
+      pushValue("conditionalUi", this.isConditionalUIEnabled);
+
+      if (this.reqAllowCredentials.length > 0) {
+        const sanitized = this.reqAllowCredentials
+          .map((entry) => {
+            const copy = Object.assign({}, entry || {});
+            copy.transports = Array.isArray(copy.transports)
+              ? copy.transports
+              : copy.transports
+              ? [copy.transports]
+              : [];
+            return copy;
+          })
+          .filter((entry) => {
+            const hasId =
+              entry.id !== undefined && entry.id !== null && entry.id !== "";
+            const hasType =
+              entry.type !== undefined &&
+              entry.type !== null &&
+              entry.type !== "";
+            return hasId || hasType || entry.transports.length > 0;
+          });
+        if (sanitized.length > 0) {
+          params.allowCredentials = JSON.stringify(sanitized);
+        }
+      }
+
+      return params;
+    },
+    async saveRequestToClipboard() {
+      const params = this.collectRequestQueryParams();
+      const managedKeys = this.$options.requestQueryKeys || [];
+
+      const url = new URL(window.location.href);
+      const searchParams = new URLSearchParams(url.search);
+
+      managedKeys.forEach((key) => {
+        searchParams.delete(key);
+      });
+
+      Object.keys(params).forEach((key) => {
+        const value = params[key];
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            searchParams.append(key, item);
+          });
+        } else {
+          searchParams.set(key, value);
+        }
+      });
+
+      url.search = searchParams.toString();
+
+      try {
+        await this.writeToClipboard(url.toString());
+        if (this.$buefy && this.$buefy.toast) {
+          this.$buefy.toast.open({
+            message: "URL copied to clipboard",
+            type: "is-success",
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to copy URL", error);
+        if (this.$buefy && this.$buefy.toast) {
+          this.$buefy.toast.open({
+            message: "Failed to copy URL",
+            type: "is-danger",
+            duration: 3000,
+          });
+        }
+      }
+    },
+    async writeToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      this.fallbackCopyText(text);
+    },
+    fallbackCopyText(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-1000px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+
+      const selection = document.getSelection();
+      const selectedRange =
+        selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+      textarea.focus();
+      textarea.select();
+
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textarea);
+
+      if (selectedRange && selection) {
+        selection.removeAllRanges();
+        selection.addRange(selectedRange);
+      }
+
+      if (!successful) {
+        throw new Error("execCommand copy failed");
+      }
+    },
+    restoreRequestFromQuery(query) {
+      if (!query || Object.keys(query).length === 0) {
+        return;
+      }
+
+      const pickSingle = (value) =>
+        Array.isArray(value) ? value[value.length - 1] : value;
+      const normalizeString = (raw) => {
+        if (raw === undefined || raw === null) {
+          return "";
+        }
+        const str = String(raw);
+        return str === "null" || str === "undefined" ? "" : str;
+      };
+      const toArray = (value) => {
+        if (Array.isArray(value)) {
+          return value.filter(
+            (item) =>
+              item !== null &&
+              item !== undefined &&
+              !(typeof item === "string" && item.trim().length === 0)
+          );
+        }
+        if (typeof value === "string" && value.trim().length > 0) {
+          return [value];
+        }
+        return [];
+      };
+
+      if (Object.prototype.hasOwnProperty.call(query, "rpid")) {
+        this.reqRpid = normalizeString(pickSingle(query.rpid));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "userVerification")) {
+        this.reqUserVerification = normalizeString(
+          pickSingle(query.userVerification)
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "timeout")) {
+        const raw = pickSingle(query.timeout);
+        const parsed = parseInt(raw, 10);
+        this.reqTimeout = Number.isNaN(parsed) ? normalizeString(raw) : parsed;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "challenge")) {
+        this.reqChallenge = normalizeString(pickSingle(query.challenge));
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "hints")) {
+        this.reqHints = toArray(query.hints);
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "conditionalUi")) {
+        const value = pickSingle(query.conditionalUi);
+        this.isConditionalUIEnabled = value === "true" || value === true;
+      }
+      if (Object.prototype.hasOwnProperty.call(query, "allowCredentials")) {
+        const raw = pickSingle(query.allowCredentials);
+        const parsed = this.safeParseJson(raw, null);
+        if (Array.isArray(parsed)) {
+          this.reqAllowCredentials = parsed.map((entry) => {
+            const result = Object.assign({}, entry);
+            if (result.id === undefined || result.id === null) {
+              result.id = "";
+            }
+            if (result.type === undefined || result.type === null) {
+              result.type = "public-key";
+            }
+            if (Array.isArray(result.transports)) {
+              result.transports = result.transports.slice();
+            } else if (result.transports) {
+              result.transports = [result.transports];
+            } else {
+              result.transports = [];
+            }
+            return result;
+          });
+        }
+      }
+    },
+    safeParseJson(value, fallback = null) {
+      if (typeof value !== "string") {
+        return fallback;
+      }
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Failed to parse JSON from query parameter:", error);
+        return fallback;
+      }
+    },
     buildGetRequest() {
       console.log("WOW")
       let request = {};
