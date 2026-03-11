@@ -196,6 +196,35 @@ export default {
     }
   },
   methods: {
+    isEvenLengthHex(value) {
+      return (
+        typeof value === "string" &&
+        value.length > 0 &&
+        value.length % 2 === 0 &&
+        /^[0-9a-fA-F]+$/.test(value)
+      );
+    },
+    toBase64UrlFromHex(value) {
+      return Buffer.from(value, "hex")
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
+    },
+    normalizeUserId(value) {
+      const normalized = (value || "").trim();
+      if (this.isEvenLengthHex(normalized)) {
+        return this.toBase64UrlFromHex(normalized);
+      }
+      return normalized;
+    },
+    normalizeCredentialId(value) {
+      const normalized = (value || "").trim();
+      if (this.isEvenLengthHex(normalized)) {
+        return this.toBase64UrlFromHex(normalized);
+      }
+      return normalized;
+    },
     generateRandomUserId() {
       this.reqUserId = require("crypto")
         .randomBytes(32)
@@ -210,7 +239,7 @@ export default {
 
       window.PublicKeyCredential.signalUnknownCredential({
         rpId: this.signalUnknownCredentialRpId,
-        credentialId: this.signalUnknownCredentialCredentialId
+        credentialId: this.normalizeCredentialId(this.signalUnknownCredentialCredentialId)
       }).catch(err => {
           console.log("signalUnknownCredential Error", err);
           this.errorType = err.name;
@@ -225,10 +254,8 @@ export default {
 
       window.PublicKeyCredential.signalAllAcceptedCredentials({
         rpId: this.signalAllAcceptedCredentialsRpId,
-        userId: Buffer.from(this.signalAllAcceptedCredentialsUserId, "hex").toString('base64').replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, ''),
-        allAcceptedCredentialIds:this.signalAllAcceptedCredentialsAllAcceptedCredentals.map(obj => obj.id)
+        userId: this.normalizeUserId(this.signalAllAcceptedCredentialsUserId),
+        allAcceptedCredentialIds:this.signalAllAcceptedCredentialsAllAcceptedCredentals.map(obj => this.normalizeCredentialId(obj.id))
       }).catch(err => {
           console.log("signalAllAcceptedCredentials Error", err);
           this.errorType = err.name;
@@ -246,9 +273,7 @@ export default {
 
       window.PublicKeyCredential.signalCurrentUserDetails({
         rpId: this.signalCurrentUserDetailsRpId,
-        userId: Buffer.from(this.signalCurrentUserDetailsUserId, "hex").toString('base64').replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, ''),
+        userId: this.normalizeUserId(this.signalCurrentUserDetailsUserId),
         name: this.signalCurrentUserDetailsName,
         displayName: this.signalCurrentUserDetailsDisplayName
       }).catch(err => {

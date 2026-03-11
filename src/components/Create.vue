@@ -678,7 +678,7 @@ export default {
       request.publicKey.rp.id = this.reqRpid;
       request.publicKey.rp.icon = this.reqRpIcon;
       request.publicKey.user = {};
-      request.publicKey.user.id = Uint8Array.from(this.reqUserId);
+      request.publicKey.user.id = Buffer.from(this.reqUserId, "hex");
       request.publicKey.user.name = this.reqUserName;
       request.publicKey.user.icon = this.reqUserIcon;
       request.publicKey.user.displayName = this.reqUserDisplayName;
