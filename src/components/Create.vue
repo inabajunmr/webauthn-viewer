@@ -1387,54 +1387,7 @@ export default {
         });
     },
     redirectToLogin() {
-      // Prepare current settings as query parameters, excluding null/empty values
-      const rawParams = {
-        rpName: this.reqRpName,
-        rpId: this.reqRpid,
-        rpIcon: this.reqRpIcon,
-        userId: this.reqUserId,
-        userName: this.reqUserName,
-        userIcon: this.reqUserIcon,
-        userDisplayName: this.reqUserDisplayName,
-        pubKeyCredParams: JSON.stringify(this.reqPubKeyCredParams),
-        authenticatorSelectionAuthenticationAttachment:
-          this.reqauthenticatorSelectionAuthenticationAttachment,
-        authenticatorSelectionRequireResidentKey:
-          this.reqauthenticatorSelectionRequireResidentKey,
-        authenticatorSelectionResidentKey:
-          this.reqauthenticatorSelectionResidentKey,
-        authenticatorSelectionUserVerification:
-          this.reqauthenticatorSelectionUserVerification,
-        attestation: this.reqAttestation,
-        attestationFormats: JSON.stringify(this.reqAttestationFormats),
-        timeout: this.reqTimeout,
-        challenge: this.reqChallenge,
-        excludeCredentials: JSON.stringify(this.reqExcludeCredentials),
-        hints: JSON.stringify(this.reqHints),
-        extensions: this.reqExtensions,
-      };
-
-      // Filter out null, undefined, empty string values
-      const params = {};
-      Object.keys(rawParams).forEach((key) => {
-        const value = rawParams[key];
-        if (
-          value !== null &&
-          value !== undefined &&
-          value !== "" &&
-          value !== "null"
-        ) {
-          params[key] = value;
-        }
-      });
-
-      console.log("🔧 Filtered params (nulls removed):", params);
-
-      // Navigate to static login page
-      const queryString = new URLSearchParams(params).toString();
-      window.location.href = queryString
-        ? `${appBasePath}login.html?${queryString}`
-        : `${appBasePath}login.html`;
+      window.location.href = `${appBasePath}login.html`;
     },
     generateRandomUserId() {
       this.reqUserId = require("crypto").randomBytes(32).toString("hex");
@@ -1472,103 +1425,22 @@ export default {
       }
     },
 
-    handleLoginCompleted(queryParams) {
-      console.log("🎯 handleLoginCompleted called with:", queryParams);
+    handleLoginCompleted() {
+      console.log("🎯 handleLoginCompleted called");
 
-      // Debug: Log specific problematic parameters
-      console.log("🔍 Query parameter investigation:");
-      console.log("  - Original reqChallenge before login:", this.reqChallenge);
-      console.log("  - Query challenge:", queryParams.challenge);
-      console.log("  - Query challenge type:", typeof queryParams.challenge);
-      console.log("  - Original reqUserId before login:", this.reqUserId);
-      console.log("  - Query userId:", queryParams.userId);
-      console.log("  - Query userId type:", typeof queryParams.userId);
-      console.log("  - Query userName:", queryParams.userName);
-      console.log("  - Query userDisplayName:", queryParams.userDisplayName);
-
-      // Restore configuration parameters
-      if (queryParams.rpName) this.reqRpName = queryParams.rpName;
-      if (queryParams.rpId) this.reqRpid = queryParams.rpId;
-      if (queryParams.rpIcon) this.reqRpIcon = queryParams.rpIcon;
-      if (queryParams.userId) this.reqUserId = queryParams.userId;
-      if (queryParams.userName) this.reqUserName = queryParams.userName;
-      if (queryParams.userIcon) this.reqUserIcon = queryParams.userIcon;
-      if (queryParams.userDisplayName)
-        this.reqUserDisplayName = queryParams.userDisplayName;
-      if (queryParams.pubKeyCredParams) {
-        try {
-          this.reqPubKeyCredParams = JSON.parse(queryParams.pubKeyCredParams);
-        } catch (e) {
-          console.warn("Failed to parse pubKeyCredParams:", e);
-        }
-      }
-      if (queryParams.authenticatorSelectionAuthenticationAttachment) {
-        this.reqauthenticatorSelectionAuthenticationAttachment =
-          queryParams.authenticatorSelectionAuthenticationAttachment;
-      }
-      // Only set requireResidentKey if it exists in query params and is not "null"
-      if (
-        queryParams.authenticatorSelectionRequireResidentKey &&
-        queryParams.authenticatorSelectionRequireResidentKey !== "null"
-      ) {
-        this.reqauthenticatorSelectionRequireResidentKey =
-          queryParams.authenticatorSelectionRequireResidentKey;
-      }
-      if (queryParams.authenticatorSelectionResidentKey) {
-        this.reqauthenticatorSelectionResidentKey =
-          queryParams.authenticatorSelectionResidentKey;
-      }
-      if (queryParams.authenticatorSelectionUserVerification) {
-        this.reqauthenticatorSelectionUserVerification =
-          queryParams.authenticatorSelectionUserVerification;
-      }
-      if (queryParams.attestation)
-        this.reqAttestation = queryParams.attestation;
-      if (queryParams.attestationFormats) {
-        try {
-          this.reqAttestationFormats = JSON.parse(
-            queryParams.attestationFormats
-          );
-        } catch (e) {
-          console.warn("Failed to parse attestationFormats:", e);
-        }
-      }
-      if (queryParams.timeout) this.reqTimeout = parseInt(queryParams.timeout);
-      if (queryParams.challenge) this.reqChallenge = queryParams.challenge;
-      if (queryParams.excludeCredentials) {
-        try {
-          this.reqExcludeCredentials = JSON.parse(
-            queryParams.excludeCredentials
-          );
-        } catch (e) {
-          console.warn("Failed to parse excludeCredentials:", e);
-        }
-      }
-      if (queryParams.hints) {
-        try {
-          this.reqHints = JSON.parse(queryParams.hints);
-        } catch (e) {
-          console.warn("Failed to parse hints:", e);
-        }
-      }
-      if (queryParams.extensions) this.reqExtensions = queryParams.extensions;
-
-      // Set conditional:mediation flag
       this.conditionalMeditation = true;
 
-      // Clear parameters from URL
       this.$router.replace({ query: {} });
 
-      // Login completion message
       this.$buefy.toast.open({
-        message: `Login completed: ${queryParams.email} - Starting conditional:mediation passkey creation`,
+        message:
+          "Login completed - starting fixed conditional:mediation passkey creation",
         type: "is-success",
         duration: 3000,
       });
 
-      // Wait for user interaction then start conditional mediation
-      console.log("🚀 About to call initConditionalOnInteraction");
-      this.initConditionalOnInteraction();
+      console.log("🚀 Starting fixed conditional:mediation create request");
+      this.setupConditionalPasskey();
     },
 
     async executeConditionalMeditation() {
@@ -1590,54 +1462,7 @@ export default {
           );
         }
 
-        // Use the same buildCreateRequest logic as normal create()
-        console.log(
-          "🔄 Using buildCreateRequest logic for conditional mediation"
-        );
-        console.log("🔄 Current req values:");
-        console.log("  - reqChallenge:", this.reqChallenge);
-        console.log("  - reqChallenge type:", typeof this.reqChallenge);
-        console.log("  - reqUserId:", this.reqUserId);
-        console.log("  - reqUserId type:", typeof this.reqUserId);
-        console.log("  - reqUserName:", this.reqUserName);
-
-        // Test Buffer conversion explicitly
-        try {
-          const challengeBuffer = Buffer.from(this.reqChallenge, "hex");
-          console.log("🔍 Challenge Buffer conversion:");
-          console.log("  - Input:", this.reqChallenge);
-          console.log("  - Output:", challengeBuffer);
-          console.log("  - Output type:", challengeBuffer.constructor.name);
-
-          const userIdBuffer = Buffer.from(this.reqUserId, "hex");
-          console.log("🔍 UserId Buffer conversion:");
-          console.log("  - Input:", this.reqUserId);
-          console.log("  - Output:", userIdBuffer);
-          console.log("  - Output type:", userIdBuffer.constructor.name);
-        } catch (e) {
-          console.error("❌ Buffer conversion failed:", e);
-        }
-
-        // Build request using exactly the same logic as buildCreateRequest computed property
-        const baseRequest = this.buildCreateRequest;
-        console.log("🔄 Built request:", baseRequest);
-
-        // Use buildCreateRequest as base, then add conditional mediation
-        const createOptions = {
-          ...baseRequest,
-          // Add conditional mediation parameter
-          mediation: "conditional",
-        };
-
-        // Keep all original values from buildCreateRequest
-        console.log(
-          "✅ Using all original values from buildCreateRequest for conditional mediation"
-        );
-        console.log("  - Challenge: original buildCreateRequest value");
-        console.log("  - User ID: original buildCreateRequest value");
-        console.log(
-          "  - User name/displayName: original buildCreateRequest values"
-        );
+        const createOptions = this.buildFixedConditionalCreateRequest();
 
         console.log("🔧 Fixed createOptions:", createOptions);
 
@@ -1708,6 +1533,35 @@ export default {
           duration: 4000,
         });
       }
+    },
+
+    buildFixedConditionalCreateRequest() {
+      const fixedUserName = "conditional-create@example.com";
+
+      return {
+        publicKey: {
+          rp: {
+            name: "WebAuthn Viewer",
+            id: window.location.hostname,
+          },
+          user: {
+            id: Buffer.from([50]),
+            name: fixedUserName,
+            displayName: "Conditional Create User",
+          },
+          challenge: Buffer.from(
+            "8f3a01c4e8b24d7f912a6cb035e4d8890c2f6b1a7d4e53f8a9b0c1d2e3f40516",
+            "hex"
+          ),
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },
+            { type: "public-key", alg: -257 },
+          ],
+          timeout: 30000,
+          attestation: "none",
+        },
+        mediation: "conditional",
+      };
     },
 
     // Wait for user interaction before conditional mediation

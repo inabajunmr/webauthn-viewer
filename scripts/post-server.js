@@ -64,26 +64,13 @@ function normalizeBasePath(value) {
   return pathname.endsWith("/") ? pathname : `${pathname}/`;
 }
 
-function appendParams(target, source) {
-  for (const [key, value] of source.entries()) {
-    target.set(key, value);
-  }
-}
-
-function buildLoginRedirect(body, queryParams) {
-  const formParams = new URLSearchParams(queryParams);
-  appendParams(formParams, new URLSearchParams(body));
+function buildLoginRedirect(body) {
+  const formParams = new URLSearchParams(body);
   const redirectBasePath = normalizeBasePath(formParams.get("basePath") || basePath);
+  const redirectParams = new URLSearchParams();
+  redirectParams.set("loginCompleted", "true");
 
-  formParams.delete("password");
-  formParams.delete("basePath");
-  formParams.set("loginCompleted", "true");
-
-  if (isLoopbackIpAddress(formParams.get("rpId"))) {
-    formParams.set("rpId", canonicalHost);
-  }
-
-  return `${redirectBasePath}?${formParams.toString()}`;
+  return `${redirectBasePath}?${redirectParams.toString()}`;
 }
 
 function isLoopbackIpAddress(value) {
@@ -118,10 +105,10 @@ function redirectLoopbackIpToLocalhost(req, res) {
   return true;
 }
 
-async function handleLoginPost(req, res, requestUrl) {
+async function handleLoginPost(req, res) {
   try {
     const body = await readRequestBody(req);
-    const location = buildLoginRedirect(body, requestUrl.searchParams);
+    const location = buildLoginRedirect(body);
     send(res, 303, {
       Location: location,
       "Cache-Control": "no-store",
@@ -204,7 +191,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "POST" && requestUrl.pathname === loginPostPath) {
-    handleLoginPost(req, res, requestUrl);
+    handleLoginPost(req, res);
     return;
   }
 

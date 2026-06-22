@@ -51,7 +51,7 @@
       
       <div class="notification is-info is-light">
         <p class="is-size-7">
-          After login, passkey will be automatically created with configured parameters
+          After login, passkey will be automatically created with fixed parameters
         </p>
       </div>
       
@@ -88,18 +88,11 @@ export default {
       
       this.isLoading = true;
       
-      // Prepare parameters (add login completed flag)
-      const params = {
-        ...this.$route.query,
-        email: this.email,
-        loginCompleted: 'true'
-      };
-      
       // Return to Create tab
       setTimeout(() => {
         this.$router.push({
           path: '/',
-          query: params
+          query: { loginCompleted: 'true' }
         });
       }, 500);
     },

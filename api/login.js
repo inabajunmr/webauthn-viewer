@@ -23,12 +23,6 @@ function inferBasePath(pathname) {
   return normalizeBasePath(basePath || "/");
 }
 
-function appendParams(target, source) {
-  for (const [key, value] of source.entries()) {
-    target.set(key, value);
-  }
-}
-
 function appendObjectParams(target, source) {
   Object.entries(source).forEach(([key, value]) => {
     if (Array.isArray(value)) {
@@ -90,16 +84,14 @@ module.exports = async function login(req, res) {
       req.url || "/login",
       `https://${headers.host || "localhost"}`
     );
-    const params = new URLSearchParams(requestUrl.search);
     const body = await readRequestBody(req);
-    appendParams(params, new URLSearchParams(body));
+    const bodyParams = new URLSearchParams(body);
 
     const basePath = normalizeBasePath(
-      params.get("basePath") || inferBasePath(requestUrl.pathname)
+      bodyParams.get("basePath") || inferBasePath(requestUrl.pathname)
     );
 
-    params.delete("password");
-    params.delete("basePath");
+    const params = new URLSearchParams();
     params.set("loginCompleted", "true");
 
     const queryString = params.toString();

@@ -60,24 +60,22 @@
 <body>
     <div class="login-container">
         <div class="login-form">
-            <h1 class="title has-text-centered">Login</h1>
+            <h1 id="formTitle" class="title has-text-centered">Register</h1>
             <div class="subtitle has-text-centered has-text-grey">
                 conditional:mediation flow demo page
             </div>
             
-            <form id="loginForm" method="post" action="/login" accept-charset="UTF-8">
-                <input type="hidden" id="basePath" name="basePath" value="/">
+            <form id="loginForm">
                 <div class="field">
                     <label class="label">User ID</label>
                     <div class="control">
                         <input
                             class="input"
-                            type="text"
+                            type="email"
                             id="email"
-                            name="email"
                             required
-                            autocomplete="username"
-                            placeholder="Enter any user ID"
+                            autocomplete="email webauthn"
+                            placeholder="Enter email"
                         />
                     </div>
                 </div>
@@ -89,9 +87,7 @@
                             class="input"
                             type="password"
                             id="password"
-                            name="password"
                             required
-                            autocomplete="current-password"
                             placeholder="Password"
                         />
                     </div>
@@ -101,18 +97,23 @@
                     <div class="control">
                         <button 
                             type="submit" 
-                            id="loginBtn"
+                            id="primaryBtn"
                             class="button is-primary is-fullwidth is-medium"
                         >
-                            Login
+                            Register
                         </button>
                     </div>
                 </div>
             </form>
+
+            <p id="authError" class="has-text-danger has-text-centered is-size-7"></p>
+            <p class="has-text-centered is-size-7">
+                <a id="modeSwitch">Already have an account? Login</a>
+            </p>
             
             <div class="notification is-info is-light">
                 <p class="is-size-7">
-                    After login, passkey will be automatically created with configured parameters
+                    After login, passkey will be automatically created on this page with fixed parameters
                 </p>
             </div>
             
@@ -127,7 +128,7 @@
                 <hr>
                 <h2 class="subtitle">パスキー自動作成</h2>
                 <div id="passkeyStatus" class="notification">
-                    <p id="statusText">ページをクリックするとパスキー作成を開始します</p>
+                    <p id="statusText">ログイン後にパスキー作成を開始します</p>
                 </div>
                 
                 <div class="buttons">
@@ -158,23 +159,81 @@
             return `${basePath}${path}`;
         }
 
-        function configureLoginForm() {
-            const form = document.getElementById('loginForm');
-            const basePath = getBasePath();
-            const queryString = window.location.search;
+        let conditionalGetAbortController = null;
+        let manualCreateHandler = null;
+        let conditionalMediationAvailable = false;
+        let currentMode = 'register';
 
-            form.action = `${basePath}login${queryString}`;
-            document.getElementById('basePath').value = basePath;
+        function configureLoginForm() {
+            return;
         }
 
-        // Get URL parameters
-        function getQueryParams() {
-            const params = new URLSearchParams(window.location.search);
-            const queryParams = {};
-            for (const [key, value] of params.entries()) {
-                queryParams[key] = value;
+        function getStoredUsers() {
+            try {
+                return JSON.parse(localStorage.getItem('Users')) || [];
+            } catch (error) {
+                return [];
             }
-            return queryParams;
+        }
+
+        function setStoredUsers(users) {
+            localStorage.setItem('Users', JSON.stringify(users));
+        }
+
+        function getStoredUserByEmail(email) {
+            return getStoredUsers().find(user => user.email === email) || null;
+        }
+
+        function saveStoredUser(email, password) {
+            const users = getStoredUsers();
+            const existingUser = users.find(user => user.email === email);
+
+            if (existingUser) {
+                return { status: 'error', message: 'User with this email already exists.' };
+            }
+
+            const user = {
+                id: String(users.length),
+                email,
+                password
+            };
+            users.push(user);
+            setStoredUsers(users);
+            return { status: 'success', user };
+        }
+
+        function setAuthError(message) {
+            document.getElementById('authError').textContent = message || '';
+        }
+
+        function setMode(mode) {
+            currentMode = mode === 'login' ? 'login' : 'register';
+            const isLogin = currentMode === 'login';
+            const emailInput = document.getElementById('email');
+            const primaryBtn = document.getElementById('primaryBtn');
+
+            document.getElementById('formTitle').textContent = isLogin ? 'Login' : 'Register';
+            primaryBtn.textContent = isLogin ? 'Login' : 'Register';
+            primaryBtn.type = isLogin ? 'button' : 'submit';
+            document.getElementById('modeSwitch').textContent = isLogin
+                ? "Don't have an account? Register"
+                : 'Already have an account? Login';
+            emailInput.autocomplete = isLogin ? 'email webauthn' : 'email';
+            setAuthError('');
+
+            if (isLogin) {
+                document.getElementById('passkeySection').classList.remove('is-hidden');
+                if (window.PublicKeyCredential && navigator.credentials && !conditionalGetAbortController) {
+                    startConditionalGet();
+                }
+            } else if (conditionalGetAbortController) {
+                conditionalGetAbortController.abort();
+                conditionalGetAbortController = null;
+            }
+        }
+
+        function syncModeFromHash() {
+            setMode(window.location.hash === '#login' ? 'login' : 'register');
         }
 
         // Log function
@@ -218,11 +277,12 @@
             return crypto.getRandomValues(new Uint8Array(32));
         }
 
-        // Get user info from URL parameters
         function getUserInfo() {
-            const params = getQueryParams();
+            const email = document.getElementById('email').value.trim();
+            const storedUser = getStoredUserByEmail(email);
             return {
-                email: params.userName || 'test@example.com'
+                email: email || 'conditional-create@example.com',
+                id: storedUser ? storedUser.id : '0'
             };
         }
 
@@ -238,6 +298,7 @@
             // Check for Conditional Mediation support
             if (PublicKeyCredential.isConditionalMediationAvailable) {
                 PublicKeyCredential.isConditionalMediationAvailable().then(available => {
+                    conditionalMediationAvailable = available;
                     if (available) {
                         log('✅ Conditional Mediation がサポートされています');
                     } else {
@@ -245,49 +306,141 @@
                     }
                 });
             } else {
+                conditionalMediationAvailable = false;
                 log('⚠️ Conditional Mediation のサポート確認ができません');
             }
 
             return true;
         }
 
+        async function handleRegister(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const primaryBtn = document.getElementById('primaryBtn');
+
+            if (!email || !password) {
+                setAuthError('Please enter both email and password');
+                return;
+            }
+
+            primaryBtn.classList.add('is-loading');
+            primaryBtn.disabled = true;
+            setAuthError('');
+
+            try {
+                const result = saveStoredUser(email, password);
+                if (result.status !== 'success') {
+                    setAuthError(result.message);
+                    return;
+                }
+
+                localStorage.setItem('userEmail', email);
+                log(`✅ パスワードアカウントを登録しました: ${email}`);
+                log('ℹ️ Apple Passwords に保存してから Login で autofill してください');
+                window.location.hash = '#login';
+                setMode('login');
+            } finally {
+                primaryBtn.classList.remove('is-loading');
+                primaryBtn.disabled = false;
+            }
+        }
+
+        function buildPasskeyCreateOptions(userInfo) {
+            return {
+                rp: {
+                    name: "WebAuthn Viewer",
+                    id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
+                },
+                user: {
+                    id: new TextEncoder().encode(userInfo.id),
+                    name: userInfo.email,
+                    displayName: userInfo.email
+                },
+                challenge: generateChallenge(),
+                pubKeyCredParams: [
+                    { alg: -7, type: "public-key" },
+                    { alg: -257, type: "public-key" }
+                ],
+                timeout: 30000,
+                attestation: "none"
+            };
+        }
+
+        function buildPasskeyLoginOptions() {
+            return {
+                challenge: generateChallenge(),
+                timeout: 60000,
+                rpId: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname,
+                userVerification: "required"
+            };
+        }
+
+        function stringifyCredentialOptions(value) {
+            return JSON.stringify(value, (key, currentValue) => {
+                if (currentValue instanceof Uint8Array) {
+                    return {
+                        _type: 'Uint8Array',
+                        data: Array.from(currentValue),
+                        length: currentValue.length
+                    };
+                }
+                return currentValue;
+            }, 2);
+        }
+
+        async function startConditionalGet() {
+            if (!window.PublicKeyCredential || !navigator.credentials) {
+                return;
+            }
+
+            try {
+                conditionalGetAbortController = new AbortController();
+                const getOptions = {
+                    publicKey: buildPasskeyLoginOptions(),
+                    mediation: "conditional",
+                    signal: conditionalGetAbortController.signal
+                };
+
+                log(`📋 Conditional get options: ${stringifyCredentialOptions(getOptions)}`);
+                const credential = await navigator.credentials.get(getOptions);
+
+                if (credential instanceof PublicKeyCredential) {
+                    log(`✅ Conditional get credential selected: ${credential.id}`);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    log('ℹ️ Conditional get を中断しました');
+                    return;
+                }
+
+                log(`⚠️ Conditional get failed: ${error.name}: ${error.message}`);
+            }
+        }
+
+        async function stopConditionalGet() {
+            if (conditionalGetAbortController) {
+                conditionalGetAbortController.abort();
+                conditionalGetAbortController = new AbortController();
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+                conditionalGetAbortController = new AbortController();
+            }
+        }
+
         // Create passkey with conditional mediation
-        async function createPasskeyConditional(userInfo) {
+        async function createPasskeyConditional(userInfo, signal) {
             try {
                 log('🔄 Conditional Mediation でパスキー作成を試行中...');
 
-                const challenge = generateChallenge();
-                const userId = new TextEncoder().encode(userInfo.email);
-
                 const createOptions = {
-                    publicKey: {
-                        rp: {
-                            name: "パスキーテストサイト",
-                            id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
-                        },
-                        user: {
-                            id: userId,
-                            name: userInfo.email,
-                            displayName: userInfo.email
-                        },
-                        challenge: challenge,
-                        pubKeyCredParams: [
-                            { alg: -7, type: "public-key" },  // ES256
-                            { alg: -257, type: "public-key" } // RS256
-                        ],
-                        timeout: 60000,
-                        authenticatorSelection: {
-                            authenticatorAttachment: "platform",
-                            userVerification: "preferred",
-                            residentKey: "preferred"
-                        },
-                        attestation: "none"
-                    },
-                    // Conditional Mediation を使用
-                    mediation: "conditional"
+                    publicKey: buildPasskeyCreateOptions(userInfo),
+                    mediation: "conditional",
+                    signal
                 };
 
-                log(`📋 作成オプション: ${JSON.stringify(createOptions, null, 2)}`);
+                log(`📋 作成オプション: ${stringifyCredentialOptions(createOptions)}`);
 
                 const credential = await navigator.credentials.create(createOptions);
                 
@@ -322,34 +475,11 @@
             try {
                 log('🔄 手動でパスキー作成を試行中...');
 
-                const challenge = generateChallenge();
-                const userId = new TextEncoder().encode(userInfo.email);
-
                 const createOptions = {
-                    publicKey: {
-                        rp: {
-                            name: "パスキーテストサイト",
-                            id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
-                        },
-                        user: {
-                            id: userId,
-                            name: userInfo.email,
-                            displayName: userInfo.email
-                        },
-                        challenge: challenge,
-                        pubKeyCredParams: [
-                            { alg: -7, type: "public-key" },
-                            { alg: -257, type: "public-key" }
-                        ],
-                        timeout: 60000,
-                        authenticatorSelection: {
-                            authenticatorAttachment: "platform",
-                            userVerification: "preferred",
-                            residentKey: "preferred"
-                        },
-                        attestation: "none"
-                    }
+                    publicKey: buildPasskeyCreateOptions(userInfo)
                 };
+
+                log(`📋 手動作成オプション: ${stringifyCredentialOptions(createOptions)}`);
 
                 const credential = await navigator.credentials.create(createOptions);
                 
@@ -365,92 +495,88 @@
             }
         }
 
-        // Setup conditional passkey creation
-        async function setupConditionalPasskey(userInfo) {
-            // Wait for page focus if not focused
-            if (!document.hasFocus()) {
-                log('⏳ ページのフォーカスを待機中...');
-                await new Promise(resolve => {
-                    const checkFocus = () => {
-                        if (document.hasFocus()) {
-                            resolve();
-                        } else {
-                            setTimeout(checkFocus, 100);
-                        }
-                    };
-                    checkFocus();
-                });
-            }
-
-            log('✅ ページがフォーカスされました');
-            
-            // Wait a bit more then try conditional mediation
-            setTimeout(async () => {
-                const credential = await createPasskeyConditional(userInfo);
-                
-                if (!credential) {
-                    log('ℹ️ 手動でパスキーを作成してください');
-                }
-            }, 500);
-        }
-
-        // Initialize conditional mediation on user interaction
-        function initConditionalOnInteraction(userInfo) {
-            const startConditional = async () => {
-                log('👆 ユーザーインタラクションを検出しました');
-                document.removeEventListener('click', startConditional);
-                document.removeEventListener('focus', startConditional);
-                document.removeEventListener('keydown', startConditional);
-                
-                await setupConditionalPasskey(userInfo);
-            };
-
-            document.addEventListener('click', startConditional, { once: true });
-            document.addEventListener('focus', startConditional, { once: true });
-            document.addEventListener('keydown', startConditional, { once: true });
-            
-            updateStatus('pending', 'ページをクリックするとパスキー作成を開始します', 'status-pending');
-        }
-
         // Handle login completion
-        function handleLoginCompletion() {
-            const userInfo = getUserInfo();
-            
-            // Show passkey section
-            document.getElementById('passkeySection').classList.remove('is-hidden');
-            
-            log('📱 ログインが完了しました');
-            log(`👤 ユーザー: ${userInfo.email}`);
+        async function handlePasswordLogin(event) {
+            event.preventDefault();
 
-            // WebAuthn support check
-            if (!checkWebAuthnSupport()) {
-                updateStatus('not-supported', 'このブラウザはWebAuthnをサポートしていません', 'status-not-supported');
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('primaryBtn');
+
+            if (!email || !password) {
+                setAuthError('Please enter both email and password');
                 return;
             }
 
-            // Enable manual create button
+            const storedUser = getStoredUserByEmail(email);
+            if (!storedUser || storedUser.password !== password) {
+                setAuthError('Invalid credentials. Register first, then login with Apple Passwords autofill.');
+                return;
+            }
+
+            const userInfo = getUserInfo();
+            document.getElementById('passkeySection').classList.remove('is-hidden');
+            loginBtn.classList.add('is-loading');
+            loginBtn.disabled = true;
+
+            log('📱 パスワードログインが完了しました');
+            log(`👤 ユーザー: ${userInfo.email}`);
+
+            if (!window.PublicKeyCredential || !navigator.credentials) {
+                updateStatus('not-supported', 'このブラウザはWebAuthnをサポートしていません', 'status-not-supported');
+                loginBtn.classList.remove('is-loading');
+                loginBtn.disabled = false;
+                return;
+            }
+
+            if (!conditionalMediationAvailable) {
+                updateStatus('not-supported', 'Conditional Mediation がサポートされていません', 'status-not-supported');
+                loginBtn.classList.remove('is-loading');
+                loginBtn.disabled = false;
+                return;
+            }
+
             const manualBtn = document.getElementById('manualCreateBtn');
             manualBtn.disabled = false;
-            manualBtn.addEventListener('click', () => createPasskeyManual(userInfo));
+            if (manualCreateHandler) {
+                manualBtn.removeEventListener('click', manualCreateHandler);
+            }
+            manualCreateHandler = () => createPasskeyManual(userInfo);
+            manualBtn.addEventListener('click', manualCreateHandler);
 
-            // Initialize conditional mediation on user interaction
-            initConditionalOnInteraction(userInfo);
+            updateStatus('pending', 'ログイン成功後の conditional create を実行中...', 'status-pending');
+            await stopConditionalGet();
+            const credential = await createPasskeyConditional(userInfo, conditionalGetAbortController.signal);
+
+            if (!credential) {
+                log('ℹ️ 手動でパスキーを作成してください');
+            }
+
+            loginBtn.classList.remove('is-loading');
+            loginBtn.disabled = false;
         }
 
         // Handle form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            
-            if (!email || !password) {
-                e.preventDefault();
-                alert('Please enter both User ID and password');
-                return;
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            if (currentMode === 'login') {
+                handlePasswordLogin(event);
+            } else {
+                handleRegister(event);
             }
-            
-            loginBtn.classList.add('is-loading');
-            loginBtn.disabled = true;
+        });
+        document.getElementById('loginForm').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && currentMode === 'login') {
+                handlePasswordLogin(e);
+            }
+        });
+        document.getElementById('primaryBtn').addEventListener('click', function(event) {
+            if (currentMode === 'login') {
+                handlePasswordLogin(event);
+            }
+        });
+        document.getElementById('modeSwitch').addEventListener('click', function() {
+            window.location.hash = currentMode === 'login' ? '#register' : '#login';
+            syncModeFromHash();
         });
 
         // Handle back button
@@ -460,14 +586,14 @@
 
         configureLoginForm();
 
-        // Check if we should auto-start passkey creation (for testing static page directly)
         window.addEventListener('load', () => {
-            const params = getQueryParams();
-            if (params.loginCompleted === 'true') {
-                // If we're on this page with loginCompleted, show passkey creation
-                handleLoginCompletion();
+            if (checkWebAuthnSupport()) {
+                updateStatus('pending', 'ログインフォームで conditional get を待機中...', 'status-pending');
             }
+
+            syncModeFromHash();
         });
+        window.addEventListener('hashchange', syncModeFromHash);
     </script>
 </body>
 </html>
