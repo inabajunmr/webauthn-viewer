@@ -139,7 +139,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="preferred"
+              placeholder="required or preferred or discouraged"
               v-model="reqUserVerification"
             />
           </div>

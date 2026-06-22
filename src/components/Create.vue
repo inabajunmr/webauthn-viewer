@@ -304,7 +304,7 @@
             <input
               class="input is-small"
               type="text"
-              placeholder="preferred"
+              placeholder="required or preferred or discouraged"
               v-model="reqauthenticatorSelectionUserVerification"
             />
           </div>
@@ -460,6 +460,57 @@
               <input type="checkbox" v-model="conditionalMeditation" />
               conditional:meditation
             </label>
+          </div>
+        </div>
+        <div v-if="conditionalMeditation" class="box conditional-login-form">
+          <h4 class="title is-6">Login</h4>
+          <div class="notification is-warning is-light is-size-7">
+            <strong>Note:</strong> In Chrome, this flow has only been verified
+            with attestation: none and userVerification: discouraged.
+          </div>
+          <form @submit.prevent="handleConditionalLoginSubmit">
+            <div class="field">
+              <label class="label is-small">User ID</label>
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  v-model="conditionalLoginEmail"
+                  required
+                  autocomplete="username"
+                  placeholder="Enter any user ID"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label class="label is-small">Password</label>
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="password"
+                  v-model="conditionalLoginPassword"
+                  required
+                  autocomplete="current-password"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <div class="control">
+                <button
+                  type="submit"
+                  class="button is-primary is-small is-fullwidth"
+                  :class="{ 'is-loading': conditionalLoginLoading }"
+                  :disabled="conditionalLoginLoading"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </form>
+          <div class="notification is-info is-light is-size-7">
+            After login, passkey will be automatically created with configured
+            parameters
           </div>
         </div>
         <input
@@ -711,6 +762,9 @@ export default {
       reqExtensions: '{ "credProps": true }',
       createResponse: {},
       conditionalMeditation: false,
+      conditionalLoginEmail: "",
+      conditionalLoginPassword: "",
+      conditionalLoginLoading: false,
     };
   },
   computed: {
@@ -907,11 +961,6 @@ export default {
       },
       immediate: true,
     },
-  },
-  mounted() {
-    console.log("🏗️ Create component mounted");
-    console.log("🏗️ Current route:", this.$route);
-    this.checkMeditationResult();
   },
   methods: {
     parseOptionalBoolean(value) {
@@ -1328,16 +1377,19 @@ export default {
       }
     },
     create() {
+      if (this.conditionalMeditation) {
+        this.$buefy.toast.open({
+          message: "Enter User ID and password, then press Login",
+          type: "is-info",
+          duration: 3000,
+        });
+        return;
+      }
+
       // reset
       this.errorType = "";
       this.errorMessage = "";
       this.createResponse = {};
-
-      // Navigate to virtual login screen for conditional:meditation flow
-      if (this.conditionalMeditation) {
-        this.redirectToLogin();
-        return;
-      }
 
       // WebAuthn support check
       if (!navigator.credentials) {
@@ -1384,54 +1436,6 @@ export default {
           this.errorMessage = err.message;
         });
     },
-    redirectToLogin() {
-      // Prepare current settings as query parameters, excluding null/empty values
-      const rawParams = {
-        rpName: this.reqRpName,
-        rpId: this.reqRpid,
-        rpIcon: this.reqRpIcon,
-        userId: this.reqUserId,
-        userName: this.reqUserName,
-        userIcon: this.reqUserIcon,
-        userDisplayName: this.reqUserDisplayName,
-        pubKeyCredParams: JSON.stringify(this.reqPubKeyCredParams),
-        authenticatorSelectionAuthenticationAttachment:
-          this.reqauthenticatorSelectionAuthenticationAttachment,
-        authenticatorSelectionRequireResidentKey:
-          this.reqauthenticatorSelectionRequireResidentKey,
-        authenticatorSelectionResidentKey:
-          this.reqauthenticatorSelectionResidentKey,
-        authenticatorSelectionUserVerification:
-          this.reqauthenticatorSelectionUserVerification,
-        attestation: this.reqAttestation,
-        attestationFormats: JSON.stringify(this.reqAttestationFormats),
-        timeout: this.reqTimeout,
-        challenge: this.reqChallenge,
-        excludeCredentials: JSON.stringify(this.reqExcludeCredentials),
-        hints: JSON.stringify(this.reqHints),
-        extensions: this.reqExtensions,
-      };
-
-      // Filter out null, undefined, empty string values
-      const params = {};
-      Object.keys(rawParams).forEach((key) => {
-        const value = rawParams[key];
-        if (
-          value !== null &&
-          value !== undefined &&
-          value !== "" &&
-          value !== "null"
-        ) {
-          params[key] = value;
-        }
-      });
-
-      console.log("🔧 Filtered params (nulls removed):", params);
-
-      // Navigate to static login page
-      const queryString = new URLSearchParams(params).toString();
-      window.location.href = `/webauthn-viewer/login.html?${queryString}`;
-    },
     generateRandomUserId() {
       this.reqUserId = require("crypto").randomBytes(32).toString("hex");
       return this.reqUserId;
@@ -1447,233 +1451,100 @@ export default {
       this.reqPubKeyCredParams.push({ type: "public-key" });
     },
 
-    checkMeditationResult() {
-      console.log("🔍 checkMeditationResult called");
-
-      // Check URL parameters from Vue Router query
-      const queryParams = this.$route.query;
-      console.log("🔍 Route query:", queryParams);
-      console.log("🔍 loginCompleted value:", queryParams.loginCompleted);
-      console.log("🔍 loginCompleted type:", typeof queryParams.loginCompleted);
-
-      // Execute conditional meditation API if login completed
-      if (queryParams.loginCompleted === "true") {
-        console.log(
-          "✅ Login completed detected, calling handleLoginCompleted"
-        );
-        this.handleLoginCompleted(queryParams);
+    async handleConditionalLoginSubmit() {
+      if (!this.conditionalLoginEmail || !this.conditionalLoginPassword) {
+        this.$buefy.toast.open({
+          message: "Please enter both User ID and password",
+          type: "is-warning",
+          duration: 3000,
+        });
         return;
-      } else {
-        console.log("❌ Login completed not detected");
       }
-    },
 
-    handleLoginCompleted(queryParams) {
-      console.log("🎯 handleLoginCompleted called with:", queryParams);
+      const userInfo = {
+        email: this.conditionalLoginEmail,
+      };
 
-      // Debug: Log specific problematic parameters
-      console.log("🔍 Query parameter investigation:");
-      console.log("  - Original reqChallenge before login:", this.reqChallenge);
-      console.log("  - Query challenge:", queryParams.challenge);
-      console.log("  - Query challenge type:", typeof queryParams.challenge);
-      console.log("  - Original reqUserId before login:", this.reqUserId);
-      console.log("  - Query userId:", queryParams.userId);
-      console.log("  - Query userId type:", typeof queryParams.userId);
-      console.log("  - Query userName:", queryParams.userName);
-      console.log("  - Query userDisplayName:", queryParams.userDisplayName);
+      this.reqUserName = userInfo.email;
+      this.reqUserDisplayName = userInfo.email;
 
-      // Restore configuration parameters
-      if (queryParams.rpName) this.reqRpName = queryParams.rpName;
-      if (queryParams.rpId) this.reqRpid = queryParams.rpId;
-      if (queryParams.rpIcon) this.reqRpIcon = queryParams.rpIcon;
-      if (queryParams.userId) this.reqUserId = queryParams.userId;
-      if (queryParams.userName) this.reqUserName = queryParams.userName;
-      if (queryParams.userIcon) this.reqUserIcon = queryParams.userIcon;
-      if (queryParams.userDisplayName)
-        this.reqUserDisplayName = queryParams.userDisplayName;
-      if (queryParams.pubKeyCredParams) {
-        try {
-          this.reqPubKeyCredParams = JSON.parse(queryParams.pubKeyCredParams);
-        } catch (e) {
-          console.warn("Failed to parse pubKeyCredParams:", e);
-        }
-      }
-      if (queryParams.authenticatorSelectionAuthenticationAttachment) {
-        this.reqauthenticatorSelectionAuthenticationAttachment =
-          queryParams.authenticatorSelectionAuthenticationAttachment;
-      }
-      // Only set requireResidentKey if it exists in query params and is not "null"
-      if (
-        queryParams.authenticatorSelectionRequireResidentKey &&
-        queryParams.authenticatorSelectionRequireResidentKey !== "null"
-      ) {
-        this.reqauthenticatorSelectionRequireResidentKey =
-          queryParams.authenticatorSelectionRequireResidentKey;
-      }
-      if (queryParams.authenticatorSelectionResidentKey) {
-        this.reqauthenticatorSelectionResidentKey =
-          queryParams.authenticatorSelectionResidentKey;
-      }
-      if (queryParams.authenticatorSelectionUserVerification) {
-        this.reqauthenticatorSelectionUserVerification =
-          queryParams.authenticatorSelectionUserVerification;
-      }
-      if (queryParams.attestation)
-        this.reqAttestation = queryParams.attestation;
-      if (queryParams.attestationFormats) {
-        try {
-          this.reqAttestationFormats = JSON.parse(
-            queryParams.attestationFormats
-          );
-        } catch (e) {
-          console.warn("Failed to parse attestationFormats:", e);
-        }
-      }
-      if (queryParams.timeout) this.reqTimeout = parseInt(queryParams.timeout);
-      if (queryParams.challenge) this.reqChallenge = queryParams.challenge;
-      if (queryParams.excludeCredentials) {
-        try {
-          this.reqExcludeCredentials = JSON.parse(
-            queryParams.excludeCredentials
-          );
-        } catch (e) {
-          console.warn("Failed to parse excludeCredentials:", e);
-        }
-      }
-      if (queryParams.hints) {
-        try {
-          this.reqHints = JSON.parse(queryParams.hints);
-        } catch (e) {
-          console.warn("Failed to parse hints:", e);
-        }
-      }
-      if (queryParams.extensions) this.reqExtensions = queryParams.extensions;
-
-      // Set conditional:meditation flag
-      this.conditionalMeditation = true;
-
-      // Clear parameters from URL
-      this.$router.replace({ query: {} });
-
-      // Login completion message
+      this.conditionalLoginLoading = true;
       this.$buefy.toast.open({
-        message: `Login completed: ${queryParams.email} - Starting conditional:meditation passkey creation`,
+        message: `Login completed: ${userInfo.email} - Starting conditional:meditation passkey creation`,
         type: "is-success",
         duration: 3000,
       });
 
-      // Wait for user interaction then start conditional mediation
-      console.log("🚀 About to call initConditionalOnInteraction");
-      this.initConditionalOnInteraction();
+      try {
+        await this.executeLoginAutoUpgrade(userInfo);
+      } finally {
+        this.conditionalLoginLoading = false;
+      }
     },
 
-    async executeConditionalMeditation() {
-      try {
-        console.log("🔄 executeConditionalMeditation called");
-        this.logUserActivationState("executeConditionalMeditation start");
-        this.logBrowserState();
+    buildLoginAutoUpgradeRequest() {
+      const baseRequest = this.buildCreateRequest;
+      return {
+        ...baseRequest,
+        mediation: "conditional",
+      };
+    },
 
-        // Reset previous results
+    checkLoginAutoUpgradeSupport() {
+      if (!window.PublicKeyCredential) {
+        console.log("❌ WebAuthn is not supported in this browser");
+        return false;
+      }
+
+      console.log("✅ WebAuthn is supported");
+
+      if (PublicKeyCredential.isConditionalMediationAvailable) {
+        PublicKeyCredential.isConditionalMediationAvailable().then(
+          (available) => {
+            if (available) {
+              console.log("✅ Conditional Mediation がサポートされています");
+            } else {
+              console.log("⚠️ Conditional Mediation はサポートされていません");
+            }
+          }
+        );
+      } else {
+        console.log("⚠️ Conditional Mediation のサポート確認ができません");
+      }
+
+      return true;
+    },
+
+    async executeLoginAutoUpgrade(userInfo) {
+      try {
+        console.log("📱 ログインが完了しました");
+        console.log(`👤 ユーザー: ${userInfo.email}`);
+
         this.errorType = "";
         this.errorMessage = "";
         this.createResponse = {};
 
-        console.log("🔄 Starting conditional:meditation passkey creation");
-
+        if (!this.checkLoginAutoUpgradeSupport()) {
+          throw new Error("This browser does not support WebAuthn");
+        }
         if (!navigator.credentials) {
           throw new Error(
             "navigator.credentials is not available. Please use HTTPS or a supported browser."
           );
         }
 
-        // Use the same buildCreateRequest logic as normal create()
-        console.log(
-          "🔄 Using buildCreateRequest logic for conditional meditation"
-        );
-        console.log("🔄 Current req values:");
-        console.log("  - reqChallenge:", this.reqChallenge);
-        console.log("  - reqChallenge type:", typeof this.reqChallenge);
-        console.log("  - reqUserId:", this.reqUserId);
-        console.log("  - reqUserId type:", typeof this.reqUserId);
-        console.log("  - reqUserName:", this.reqUserName);
+        console.log("🔄 Conditional Mediation でパスキー作成を試行中...");
 
-        // Test Buffer conversion explicitly
-        try {
-          const challengeBuffer = Buffer.from(this.reqChallenge, "hex");
-          console.log("🔍 Challenge Buffer conversion:");
-          console.log("  - Input:", this.reqChallenge);
-          console.log("  - Output:", challengeBuffer);
-          console.log("  - Output type:", challengeBuffer.constructor.name);
+        const createOptions = this.buildLoginAutoUpgradeRequest();
+        console.log("Create Request", createOptions);
 
-          const userIdBuffer = Buffer.from(this.reqUserId, "hex");
-          console.log("🔍 UserId Buffer conversion:");
-          console.log("  - Input:", this.reqUserId);
-          console.log("  - Output:", userIdBuffer);
-          console.log("  - Output type:", userIdBuffer.constructor.name);
-        } catch (e) {
-          console.error("❌ Buffer conversion failed:", e);
-        }
-
-        // Build request using exactly the same logic as buildCreateRequest computed property
-        const baseRequest = this.buildCreateRequest;
-        console.log("🔄 Built request:", baseRequest);
-
-        // Use buildCreateRequest as base, then add conditional mediation
-        const createOptions = {
-          ...baseRequest,
-          // Add conditional mediation parameter
-          mediation: "conditional",
-        };
-
-        // Keep all original values from buildCreateRequest
-        console.log(
-          "✅ Using all original values from buildCreateRequest for conditional mediation"
-        );
-        console.log("  - Challenge: original buildCreateRequest value");
-        console.log("  - User ID: original buildCreateRequest value");
-        console.log(
-          "  - User name/displayName: original buildCreateRequest values"
-        );
-
-        console.log("🔧 Fixed createOptions:", createOptions);
-
-        // Detailed logging of critical parameters
-        console.log("🔍 Detailed parameter analysis:");
-        console.log(
-          "  - pubKeyCredParams:",
-          createOptions.publicKey.pubKeyCredParams
-        );
-        console.log(
-          "  - authenticatorSelection:",
-          createOptions.publicKey.authenticatorSelection
-        );
-        console.log("  - attestation:", createOptions.publicKey.attestation);
-        console.log(
-          "  - user.id length:",
-          createOptions.publicKey.user.id.length
-        );
-        console.log("  - user.name:", createOptions.publicKey.user.name);
-        console.log(
-          "  - challenge length:",
-          createOptions.publicKey.challenge.length
-        );
-
-        console.log("conditional:meditation Create Request", createOptions);
-
-        // Final user activation check before API call
-        this.logUserActivationState(
-          "immediately before navigator.credentials.create"
-        );
-        console.log(
-          "🚀 Calling navigator.credentials.create with conditional mediation..."
-        );
-
-        // Create passkey with conditional meditation
         const credential = await navigator.credentials.create(createOptions);
 
-        console.log("conditional:meditation Create Response", credential);
+        if (!credential) {
+          throw new Error("Credential creation returned null");
+        }
 
-        // Set result in same format as normal createResponse
+        console.log("Create Response", credential);
         this.createResponse = credential;
         this.createResponse.getClientExtensionResults =
           credential.getClientExtensionResults();
@@ -1689,133 +1560,21 @@ export default {
         }
 
         this.$buefy.toast.open({
-          message: "conditional:meditation passkey creation succeeded!",
+          message: "Passkey was automatically created!",
           type: "is-success",
           duration: 4000,
         });
       } catch (error) {
-        console.log("conditional:meditation Create Error", error);
+        console.log("Conditional Mediation Create Error", error);
         this.errorType = error.name;
         this.errorMessage = error.message;
 
         this.$buefy.toast.open({
-          message: `conditional:meditation passkey creation failed: ${error.message}`,
+          message: `Passkey creation failed: ${error.message}`,
           type: "is-danger",
           duration: 4000,
         });
       }
-    },
-
-    // Wait for user interaction before conditional mediation
-    initConditionalOnInteraction() {
-      console.log("📱 initConditionalOnInteraction called");
-      this.logUserActivationState("initConditionalOnInteraction");
-
-      const startConditional = async (event) => {
-        console.log("👆 ユーザーインタラクションを検出しました", event.type);
-        this.logUserActivationState(`startConditional - ${event.type}`);
-
-        document.removeEventListener("click", startConditional);
-        document.removeEventListener("focus", startConditional);
-        document.removeEventListener("keydown", startConditional);
-
-        await this.setupConditionalPasskey();
-      };
-
-      document.addEventListener("click", startConditional, { once: true });
-      document.addEventListener("focus", startConditional, { once: true });
-      document.addEventListener("keydown", startConditional, { once: true });
-
-      this.$buefy.toast.open({
-        message: "ページをクリックするとパスキー作成を開始します",
-        type: "is-info",
-        duration: 4000,
-      });
-    },
-
-    async setupConditionalPasskey() {
-      console.log("🔧 setupConditionalPasskey called");
-      this.logUserActivationState("setupConditionalPasskey start");
-
-      // Wait for page focus if not focused
-      if (!document.hasFocus()) {
-        console.log("⏳ ページのフォーカスを待機中...");
-        this.logUserActivationState("waiting for focus");
-
-        await new Promise((resolve) => {
-          const checkFocus = () => {
-            if (document.hasFocus()) {
-              resolve();
-            } else {
-              setTimeout(checkFocus, 100);
-            }
-          };
-          checkFocus();
-        });
-      }
-
-      console.log("✅ ページがフォーカスされました");
-      this.logUserActivationState("page focused");
-
-      // Wait a bit more then start conditional mediation
-      setTimeout(() => {
-        console.log(
-          "⏰ About to call executeConditionalMeditation after timeout"
-        );
-        this.logUserActivationState("before executeConditionalMeditation");
-        this.executeConditionalMeditation();
-      }, 500);
-    },
-
-    // Debug methods
-    logUserActivationState(context) {
-      console.log(`🔍 User Activation State (${context}):`);
-
-      // Check if user activation APIs are available
-      if (navigator.userActivation) {
-        console.log(
-          `  - hasBeenActive: ${navigator.userActivation.hasBeenActive}`
-        );
-        console.log(`  - isActive: ${navigator.userActivation.isActive}`);
-      } else {
-        console.log(`  - navigator.userActivation: not supported`);
-      }
-
-      // Check document state
-      console.log(`  - document.hasFocus(): ${document.hasFocus()}`);
-      console.log(`  - document.hidden: ${document.hidden}`);
-      console.log(`  - document.visibilityState: ${document.visibilityState}`);
-
-      // Check timing
-      console.log(`  - performance.now(): ${performance.now()}`);
-      console.log(`  - context: ${context}`);
-    },
-
-    logBrowserState() {
-      console.log(`🌐 Browser State:`);
-      console.log(`  - User Agent: ${navigator.userAgent}`);
-      console.log(`  - Location: ${window.location.href}`);
-      console.log(`  - Origin: ${window.location.origin}`);
-      console.log(`  - Hostname: ${window.location.hostname}`);
-      console.log(`  - Protocol: ${window.location.protocol}`);
-      console.log(`  - IsSecureContext: ${window.isSecureContext}`);
-
-      // WebAuthn support
-      console.log(`  - PublicKeyCredential: ${!!window.PublicKeyCredential}`);
-      if (window.PublicKeyCredential) {
-        console.log(
-          `  - isUserVerifyingPlatformAuthenticatorAvailable: ${!!PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable}`
-        );
-        console.log(
-          `  - isConditionalMediationAvailable: ${!!PublicKeyCredential.isConditionalMediationAvailable}`
-        );
-      }
-
-      // Check if we're in an iframe
-      console.log(
-        `  - window.top === window.self: ${window.top === window.self}`
-      );
-      console.log(`  - window.parent === window: ${window.parent === window}`);
     },
   },
 };
