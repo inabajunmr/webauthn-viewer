@@ -62,10 +62,11 @@
         <div class="login-form">
             <h1 class="title has-text-centered">Login</h1>
             <div class="subtitle has-text-centered has-text-grey">
-                conditional:meditation flow demo page
+                conditional:mediation flow demo page
             </div>
             
-            <form id="loginForm">
+            <form id="loginForm" method="post" action="/login" accept-charset="UTF-8">
+                <input type="hidden" id="basePath" name="basePath" value="/">
                 <div class="field">
                     <label class="label">User ID</label>
                     <div class="control">
@@ -73,6 +74,7 @@
                             class="input"
                             type="text"
                             id="email"
+                            name="email"
                             required
                             autocomplete="username"
                             placeholder="Enter any user ID"
@@ -87,6 +89,7 @@
                             class="input"
                             type="password"
                             id="password"
+                            name="password"
                             required
                             autocomplete="current-password"
                             placeholder="Password"
@@ -139,6 +142,31 @@
     </div>
 
     <script>
+        function getBasePath() {
+            const path = window.location.pathname;
+            const loginPage = 'login.html';
+
+            if (path.endsWith(loginPage)) {
+                return path.slice(0, -loginPage.length) || '/';
+            }
+
+            return '/';
+        }
+
+        function getAppUrl(path = '') {
+            const basePath = getBasePath();
+            return `${basePath}${path}`;
+        }
+
+        function configureLoginForm() {
+            const form = document.getElementById('loginForm');
+            const basePath = getBasePath();
+            const queryString = window.location.search;
+
+            form.action = `${basePath}login${queryString}`;
+            document.getElementById('basePath').value = basePath;
+        }
+
         // Get URL parameters
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
@@ -191,10 +219,10 @@
         }
 
         // Get user info from URL parameters
-        function getUserInfo(email) {
+        function getUserInfo() {
             const params = getQueryParams();
             return {
-                email: email || params.userName || 'test@example.com'
+                email: params.userName || 'test@example.com'
             };
         }
 
@@ -228,23 +256,31 @@
             try {
                 log('🔄 Conditional Mediation でパスキー作成を試行中...');
 
+                const challenge = generateChallenge();
+                const userId = new TextEncoder().encode(userInfo.email);
+
                 const createOptions = {
                     publicKey: {
                         rp: {
-                            name: "WebAuthn Viewer",
+                            name: "パスキーテストサイト",
                             id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
                         },
                         user: {
-                            id: new TextEncoder().encode('0'),
+                            id: userId,
                             name: userInfo.email,
                             displayName: userInfo.email
                         },
-                        challenge: generateChallenge(),
+                        challenge: challenge,
                         pubKeyCredParams: [
-                            { alg: -7, type: "public-key" },
-                            { alg: -257, type: "public-key" }
+                            { alg: -7, type: "public-key" },  // ES256
+                            { alg: -257, type: "public-key" } // RS256
                         ],
-                        timeout: 30000,
+                        timeout: 60000,
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "preferred",
+                            residentKey: "preferred"
+                        },
                         attestation: "none"
                     },
                     // Conditional Mediation を使用
@@ -286,23 +322,31 @@
             try {
                 log('🔄 手動でパスキー作成を試行中...');
 
+                const challenge = generateChallenge();
+                const userId = new TextEncoder().encode(userInfo.email);
+
                 const createOptions = {
                     publicKey: {
                         rp: {
-                            name: "WebAuthn Viewer",
+                            name: "パスキーテストサイト",
                             id: window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname
                         },
                         user: {
-                            id: new TextEncoder().encode('0'),
+                            id: userId,
                             name: userInfo.email,
                             displayName: userInfo.email
                         },
-                        challenge: generateChallenge(),
+                        challenge: challenge,
                         pubKeyCredParams: [
                             { alg: -7, type: "public-key" },
                             { alg: -257, type: "public-key" }
                         ],
-                        timeout: 30000,
+                        timeout: 60000,
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "preferred",
+                            residentKey: "preferred"
+                        },
                         attestation: "none"
                     }
                 };
@@ -369,8 +413,8 @@
         }
 
         // Handle login completion
-        function handleLoginCompletion(userInfo) {
-            userInfo = userInfo || getUserInfo();
+        function handleLoginCompletion() {
+            const userInfo = getUserInfo();
             
             // Show passkey section
             document.getElementById('passkeySection').classList.remove('is-hidden');
@@ -389,35 +433,32 @@
             manualBtn.disabled = false;
             manualBtn.addEventListener('click', () => createPasskeyManual(userInfo));
 
-            // Start conditional mediation directly on the login page.
-            setupConditionalPasskey(userInfo);
+            // Initialize conditional mediation on user interaction
+            initConditionalOnInteraction(userInfo);
         }
 
         // Handle form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
             
             if (!email || !password) {
+                e.preventDefault();
                 alert('Please enter both User ID and password');
                 return;
             }
             
             loginBtn.classList.add('is-loading');
             loginBtn.disabled = true;
-            
-            handleLoginCompletion(getUserInfo(email));
-            loginBtn.classList.remove('is-loading');
-            loginBtn.disabled = false;
         });
 
         // Handle back button
         document.getElementById('backLink').addEventListener('click', function() {
-            window.location.href = '/webauthn-viewer/';
+            window.location.href = getAppUrl();
         });
+
+        configureLoginForm();
 
         // Check if we should auto-start passkey creation (for testing static page directly)
         window.addEventListener('load', () => {
