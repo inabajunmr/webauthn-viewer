@@ -197,6 +197,21 @@
           </div>
         </div>
         <div class="field">
+          <label class="label is-small">extensions</label>
+          <div class="columns">
+            <div class="column">
+              <div class="control">
+                <input
+                  class="input is-small"
+                  type="text"
+                  placeholder='{"appid":"https://example.com"}'
+                  v-model="reqExtensions"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
           <label class="label is-small">Autofill</label>
           <div class="columns">
             <div class="column">
@@ -248,6 +263,24 @@
               <th>.id</th>
               <td style="word-wrap: break-word">
                 {{ getResponseView.id }}
+              </td>
+            </tr>
+            <tr>
+              <th>.rawId</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.rawId }}
+              </td>
+            </tr>
+            <tr>
+              <th>.type</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.type }}
+              </td>
+            </tr>
+            <tr>
+              <th>.authenticatorAttachment</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.authenticatorAttachment }}
               </td>
             </tr>
             <tr>
@@ -324,6 +357,18 @@
                 {{ getResponseView.signature }}
               </td>
             </tr>
+            <tr>
+              <th>getClientExtensionResults</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.getClientExtensionResults }}
+              </td>
+            </tr>
+            <tr>
+              <th>toJSON</th>
+              <td style="word-wrap: break-word">
+                {{ getResponseView.toJSON }}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -340,6 +385,7 @@ export default {
     "challenge",
     "userVerification",
     "hints",
+    "extensions",
     "conditionalUi",
   ],
   data() {
@@ -353,6 +399,7 @@ export default {
       reqChallenge: this.generateChallenge(),
       reqUserVerification: "preferred",
       reqHints: [],
+      reqExtensions: "",
       getResponse: {},
       abortController: new AbortController(),
     };
@@ -365,7 +412,16 @@ export default {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};
       result.id = this.getResponse.id;
+      result.rawId = this.toHex(this.getResponse.rawId);
       result.type = this.getResponse.type;
+      result.authenticatorAttachment = this.getResponse.authenticatorAttachment;
+      result.getClientExtensionResults = this.callOrRead(
+        this.getResponse,
+        "getClientExtensionResults"
+      );
+      result.toJSON = this.stringifyJson(
+        this.callOrRead(this.getResponse, "toJSON")
+      );
       if (this.getResponse.response) {
         /** clientDataJSON */
         let enc = new TextDecoder("utf-8");
@@ -441,7 +497,15 @@ export default {
         this.getResponse = {};
 
         // call webauthn api
-        let req = this.buildGetRequest();
+        let req;
+        try {
+          req = this.buildGetRequest();
+        } catch (err) {
+          console.log("Get Request Error", err);
+          this.errorType = err.name;
+          this.errorMessage = err.message;
+          return;
+        }
         req.mediation = 'conditional';
         req.signal = this.abortController.signal;
         console.log("Get Request for ConditionalUI", req);
@@ -470,6 +534,42 @@ export default {
     }
   },
   methods: {
+    toHex(value) {
+      if (!value) {
+        return "";
+      }
+      return Buffer.from(value).toString("hex");
+    },
+    callOrRead(target, name, transform = (value) => value) {
+      if (!target) {
+        return "";
+      }
+      const member = target[name];
+      if (typeof member === "function") {
+        try {
+          return transform(member.call(target));
+        } catch (error) {
+          return `${name}() failed: ${error.message}`;
+        }
+      }
+      if (member !== undefined) {
+        return transform(member);
+      }
+      return `${name}() is undefined`;
+    },
+    stringifyJson(value) {
+      if (typeof value === "string") {
+        return value;
+      }
+      if (value === undefined || value === null) {
+        return "";
+      }
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        return String(value);
+      }
+    },
     collectRequestQueryParams() {
       const params = {};
       const pushValue = (key, value) => {
@@ -518,6 +618,7 @@ export default {
       pushValue("timeout", this.reqTimeout);
       pushValue("challenge", this.reqChallenge);
       pushValue("hints", this.reqHints);
+      pushValue("extensions", this.reqExtensions);
       pushValue("conditionalUi", this.isConditionalUIEnabled);
 
       if (this.reqAllowCredentials.length > 0) {
@@ -674,6 +775,9 @@ export default {
       if (Object.prototype.hasOwnProperty.call(query, "hints")) {
         this.reqHints = toArray(query.hints);
       }
+      if (Object.prototype.hasOwnProperty.call(query, "extensions")) {
+        this.reqExtensions = normalizeString(pickSingle(query.extensions));
+      }
       if (Object.prototype.hasOwnProperty.call(query, "conditionalUi")) {
         const value = pickSingle(query.conditionalUi);
         this.isConditionalUIEnabled = value === "true" || value === true;
@@ -714,11 +818,10 @@ export default {
       }
     },
     buildGetRequest() {
-      console.log("WOW")
       let request = {};
       request.publicKey = {};
       if (this.reqRpid) {
-        request.publicKey.rpid = this.reqRpid;
+        request.publicKey.rpId = this.reqRpid;
       }
       request.publicKey.allowCredentials = [];
       for (let i = 0; i < this.reqAllowCredentials.length; i++) {
@@ -747,6 +850,9 @@ export default {
       if(this.reqHints.length > 0) {
         request.publicKey.hints = this.reqHints;
       }
+      if (this.reqExtensions.length != 0) {
+        request.publicKey.extensions = JSON.parse(this.reqExtensions);
+      }
       request.publicKey.timeout = this.reqTimeout;
       request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
       return request;
@@ -757,10 +863,20 @@ export default {
       this.errorMessage = "";
       this.getResponse = {};
 
+      let request;
+      try {
+        request = this.buildGetRequest();
+      } catch (err) {
+        console.log("Get Request Error", err);
+        this.errorType = err.name;
+        this.errorMessage = err.message;
+        return;
+      }
+
       // call webauthn api
-      console.log("Get Request", this.buildGetRequest());
+      console.log("Get Request", request);
       navigator.credentials
-        .get(this.buildGetRequest())
+        .get(request)
         .then(res => {
           console.log("Get Response", res);
           this.getResponse = res;

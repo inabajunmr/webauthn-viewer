@@ -168,7 +168,7 @@
                 <input
                   class="input is-small"
                   type="text"
-                  placeholder="none or direct or indirect"
+                  placeholder="none or direct or indirect or enterprise"
                   v-model="reqAttestation"
                 />
               </div>
@@ -238,6 +238,14 @@
                 v-model="reqAttestationFormats"
               />
               apple-anonymous
+            </label>
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                value="compound"
+                v-model="reqAttestationFormats"
+              />
+              compound
             </label>
             <label class="checkbox">
               <input
@@ -594,9 +602,33 @@
               </td>
             </tr>
             <tr>
+              <th>getAuthenticatorData</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.getAuthenticatorData }}
+              </td>
+            </tr>
+            <tr>
+              <th>getPublicKey</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.getPublicKey }}
+              </td>
+            </tr>
+            <tr>
+              <th>getPublicKeyAlgorithm</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.getPublicKeyAlgorithm }}
+              </td>
+            </tr>
+            <tr>
               <th>.id</th>
               <td style="word-wrap: break-word">
                 {{ createResponseView.id }}
+              </td>
+            </tr>
+            <tr>
+              <th>.rawId</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.rawId }}
               </td>
             </tr>
             <tr>
@@ -606,9 +638,21 @@
               </td>
             </tr>
             <tr>
+              <th>.authenticatorAttachment</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.authenticatorAttachment }}
+              </td>
+            </tr>
+            <tr>
               <th>getClientExtensionResults</th>
               <td style="word-wrap: break-word">
                 {{ createResponseView.getClientExtensionResults }}
+              </td>
+            </tr>
+            <tr>
+              <th>toJSON</th>
+              <td style="word-wrap: break-word">
+                {{ createResponseView.toJSON }}
               </td>
             </tr>
           </tbody>
@@ -688,17 +732,16 @@ export default {
         request.publicKey.authenticatorSelection.authenticatorAttachment =
           this.reqauthenticatorSelectionAuthenticationAttachment;
       }
-      if (this.reqauthenticatorSelectionRequireResidentKey) {
+      const requireResidentKey = this.parseOptionalBoolean(
+        this.reqauthenticatorSelectionRequireResidentKey
+      );
+      if (requireResidentKey !== null) {
         request.publicKey.authenticatorSelection.requireResidentKey =
-          this.reqauthenticatorSelectionRequireResidentKey;
+          requireResidentKey;
       }
       if (this.reqauthenticatorSelectionResidentKey) {
         request.publicKey.authenticatorSelection.residentKey =
           this.reqauthenticatorSelectionResidentKey;
-      }
-      if (this.reqauthenticatorSelectionUserVerification) {
-        request.publicKey.authenticatorSelection.userVerification =
-          this.reqauthenticatorSelectionUserVerification;
       }
       if (this.reqauthenticatorSelectionUserVerification) {
         request.publicKey.authenticatorSelection.userVerification =
@@ -724,6 +767,13 @@ export default {
           credentials.type = excludeCredential.type;
           exist = true;
         }
+        if (
+          Array.isArray(excludeCredential.transports) &&
+          excludeCredential.transports.length > 0
+        ) {
+          credentials.transports = [...excludeCredential.transports];
+          exist = true;
+        }
         if (exist) {
           request.publicKey.excludeCredentials.push(credentials);
         }
@@ -739,13 +789,37 @@ export default {
     createResponseView: function () {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};
-      result.getClientExtensionResults =
-        this.createResponse.getClientExtensionResults;
-      //console.log(this.createResponse.getClientExtensionResults());
       result.id = this.createResponse.id;
+      result.rawId = this.toHex(this.createResponse.rawId);
       result.type = this.createResponse.type;
+      result.authenticatorAttachment =
+        this.createResponse.authenticatorAttachment;
+      result.getClientExtensionResults = this.callOrRead(
+        this.createResponse,
+        "getClientExtensionResults"
+      );
+      result.toJSON = this.stringifyJson(
+        this.callOrRead(this.createResponse, "toJSON")
+      );
       if (this.createResponse.response) {
-        result.getTransports = this.createResponse.response.getTransports;
+        result.getTransports = this.callOrRead(
+          this.createResponse.response,
+          "getTransports"
+        );
+        result.getAuthenticatorData = this.callOrRead(
+          this.createResponse.response,
+          "getAuthenticatorData",
+          this.toHex
+        );
+        result.getPublicKey = this.callOrRead(
+          this.createResponse.response,
+          "getPublicKey",
+          this.toHex
+        );
+        result.getPublicKeyAlgorithm = this.callOrRead(
+          this.createResponse.response,
+          "getPublicKeyAlgorithm"
+        );
         /** clientDataJSON */
         let enc = new TextDecoder("utf-8");
         result.clientDataJSON = enc.decode(
@@ -840,6 +914,51 @@ export default {
     this.checkMeditationResult();
   },
   methods: {
+    parseOptionalBoolean(value) {
+      if (value === true || value === "true") {
+        return true;
+      }
+      if (value === false || value === "false") {
+        return false;
+      }
+      return null;
+    },
+    toHex(value) {
+      if (!value) {
+        return "";
+      }
+      return Buffer.from(value).toString("hex");
+    },
+    callOrRead(target, name, transform = (value) => value) {
+      if (!target) {
+        return "";
+      }
+      const member = target[name];
+      if (typeof member === "function") {
+        try {
+          return transform(member.call(target));
+        } catch (error) {
+          return `${name}() failed: ${error.message}`;
+        }
+      }
+      if (member !== undefined) {
+        return transform(member);
+      }
+      return `${name}() is undefined`;
+    },
+    stringifyJson(value) {
+      if (typeof value === "string") {
+        return value;
+      }
+      if (value === undefined || value === null) {
+        return "";
+      }
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        return String(value);
+      }
+    },
     collectRequestQueryParams() {
       const params = {};
       const pushValue = (key, value) => {
@@ -1229,10 +1348,20 @@ export default {
         return;
       }
 
+      let request;
+      try {
+        request = this.buildCreateRequest;
+      } catch (err) {
+        console.log("Create Request Error", err);
+        this.errorType = err.name;
+        this.errorMessage = err.message;
+        return;
+      }
+
       // call webauthn api
-      console.log("Create Request", this.buildCreateRequest);
+      console.log("Create Request", request);
       navigator.credentials
-        .create(this.buildCreateRequest)
+        .create(request)
         .then((res) => {
           console.log("Create Response", res);
           this.createResponse = res;
@@ -1312,7 +1441,7 @@ export default {
       return this.reqChallenge;
     },
     addExcludeCredentials() {
-      this.reqExcludeCredentials.push({ transports: [] });
+      this.reqExcludeCredentials.push({ type: "public-key", transports: [] });
     },
     addPubKeyCredParam() {
       this.reqPubKeyCredParams.push({ type: "public-key" });
