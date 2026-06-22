@@ -41,11 +41,10 @@
             <div class="column">
               <label class="label is-small">.type</label>
               <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
+                <SuggestTextInput
                   placeholder="public-key"
                   v-model="allowCredential.type"
+                  :options="suggestionOptions.credentialTypes"
                 />
               </div>
             </div>
@@ -136,11 +135,10 @@
         <div class="field">
           <label class="label is-small">userVerification</label>
           <div class="control">
-            <input
-              class="input is-small"
-              type="text"
+            <SuggestTextInput
               placeholder="required or preferred or discouraged"
               v-model="reqUserVerification"
+              :options="suggestionOptions.userVerification"
             />
           </div>
         </div>
@@ -377,7 +375,13 @@
 </template>
 
 <script>
+import SuggestTextInput from "./SuggestTextInput.vue";
+import { webauthnSuggestionOptions } from "../webauthnSuggestionOptions";
+
 export default {
+  components: {
+    SuggestTextInput,
+  },
   requestQueryKeys: [
     "rpid",
     "allowCredentials",
@@ -392,6 +396,7 @@ export default {
     return {
       errorType: "",
       errorMessage: "",
+      suggestionOptions: webauthnSuggestionOptions,
       isConditionalUIEnabled: false,
       reqRpid: window.location.hostname,
       reqAllowCredentials: [],

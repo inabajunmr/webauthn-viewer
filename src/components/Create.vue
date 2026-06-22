@@ -131,22 +131,20 @@
             <div class="column">
               <label class="label is-small">.type</label>
               <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
+                <SuggestTextInput
                   placeholder="public-key"
                   v-model="pubKeyCredParam.type"
+                  :options="suggestionOptions.credentialTypes"
                 />
               </div>
             </div>
             <div class="column">
               <label class="label is-small">.alg</label>
               <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
+                <SuggestTextInput
                   placeholder="-7"
                   v-model="pubKeyCredParam.alg"
+                  :options="suggestionOptions.coseAlgorithms"
                 />
               </div>
             </div>
@@ -165,11 +163,10 @@
             <div class="field">
               <label class="label is-small">attestation</label>
               <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
+                <SuggestTextInput
                   placeholder="none or direct or indirect or enterprise"
                   v-model="reqAttestation"
+                  :options="suggestionOptions.attestation"
                 />
               </div>
             </div>
@@ -262,11 +259,10 @@
             >authenticatorSelection.authenticationAttachment</label
           >
           <div class="control">
-            <input
-              class="input is-small"
-              type="text"
+            <SuggestTextInput
               placeholder="platform or cross-platform"
               v-model="reqauthenticatorSelectionAuthenticationAttachment"
+              :options="suggestionOptions.authenticatorAttachment"
             />
           </div>
         </div>
@@ -275,11 +271,10 @@
             >authenticatorSelection.requireResidentKey</label
           >
           <div class="control">
-            <input
-              class="input is-small"
-              type="text"
+            <SuggestTextInput
               placeholder="true"
               v-model="reqauthenticatorSelectionRequireResidentKey"
+              :options="suggestionOptions.boolean"
             />
           </div>
         </div>
@@ -288,11 +283,10 @@
             >authenticatorSelection.residentKey</label
           >
           <div class="control">
-            <input
-              class="input is-small"
-              type="text"
+            <SuggestTextInput
               placeholder="required or preferred or discouraged"
               v-model="reqauthenticatorSelectionResidentKey"
+              :options="suggestionOptions.residentKey"
             />
           </div>
         </div>
@@ -301,11 +295,10 @@
             >authenticatorSelection.userVerification</label
           >
           <div class="control">
-            <input
-              class="input is-small"
-              type="text"
+            <SuggestTextInput
               placeholder="required or preferred or discouraged"
               v-model="reqauthenticatorSelectionUserVerification"
+              :options="suggestionOptions.userVerification"
             />
           </div>
         </div>
@@ -319,11 +312,10 @@
             <div class="column">
               <label class="label is-small">.type</label>
               <div class="control">
-                <input
-                  class="input is-small"
-                  type="text"
+                <SuggestTextInput
                   placeholder="public-key"
                   v-model="excludeCredential.type"
+                  :options="suggestionOptions.credentialTypes"
                 />
               </div>
             </div>
@@ -714,7 +706,13 @@
 </template>
 
 <script>
+import SuggestTextInput from "./SuggestTextInput.vue";
+import { webauthnSuggestionOptions } from "../webauthnSuggestionOptions";
+
 export default {
+  components: {
+    SuggestTextInput,
+  },
   requestQueryKeys: [
     "rpName",
     "rpId",
@@ -741,6 +739,7 @@ export default {
     return {
       errorType: "",
       errorMessage: "",
+      suggestionOptions: webauthnSuggestionOptions,
       reqRpName: "Acme",
       reqRpid: window.location.hostname,
       reqRpIcon: "",
