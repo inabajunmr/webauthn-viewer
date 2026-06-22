@@ -3,7 +3,7 @@
     <div class="login-form">
       <h1 class="title has-text-centered">Login</h1>
       <div class="subtitle has-text-centered has-text-grey">
-        conditional:meditation flow demo page
+        conditional:mediation flow demo page
       </div>
       
       <form @submit="handleSubmit">

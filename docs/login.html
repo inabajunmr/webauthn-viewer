@@ -62,10 +62,11 @@
         <div class="login-form">
             <h1 class="title has-text-centered">Login</h1>
             <div class="subtitle has-text-centered has-text-grey">
-                conditional:meditation flow demo page
+                conditional:mediation flow demo page
             </div>
             
-            <form id="loginForm">
+            <form id="loginForm" method="post" action="/login" accept-charset="UTF-8">
+                <input type="hidden" id="basePath" name="basePath" value="/">
                 <div class="field">
                     <label class="label">User ID</label>
                     <div class="control">
@@ -73,6 +74,7 @@
                             class="input"
                             type="text"
                             id="email"
+                            name="email"
                             required
                             autocomplete="username"
                             placeholder="Enter any user ID"
@@ -87,6 +89,7 @@
                             class="input"
                             type="password"
                             id="password"
+                            name="password"
                             required
                             autocomplete="current-password"
                             placeholder="Password"
@@ -139,6 +142,31 @@
     </div>
 
     <script>
+        function getBasePath() {
+            const path = window.location.pathname;
+            const loginPage = 'login.html';
+
+            if (path.endsWith(loginPage)) {
+                return path.slice(0, -loginPage.length) || '/';
+            }
+
+            return '/';
+        }
+
+        function getAppUrl(path = '') {
+            const basePath = getBasePath();
+            return `${basePath}${path}`;
+        }
+
+        function configureLoginForm() {
+            const form = document.getElementById('loginForm');
+            const basePath = getBasePath();
+            const queryString = window.location.search;
+
+            form.action = `${basePath}login${queryString}`;
+            document.getElementById('basePath').value = basePath;
+        }
+
         // Get URL parameters
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
@@ -411,39 +439,26 @@
 
         // Handle form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
             
             if (!email || !password) {
+                e.preventDefault();
                 alert('Please enter both User ID and password');
                 return;
             }
             
             loginBtn.classList.add('is-loading');
             loginBtn.disabled = true;
-            
-            // Simulate login delay
-            setTimeout(() => {
-                // Prepare parameters for redirect back to Vue app
-                const currentParams = getQueryParams();
-                const params = new URLSearchParams({
-                    ...currentParams,
-                    email: email,
-                    loginCompleted: 'true'
-                });
-                
-                // Redirect back to main app instead of handling here
-                window.location.href = `/webauthn-viewer/?${params.toString()}`;
-            }, 500);
         });
 
         // Handle back button
         document.getElementById('backLink').addEventListener('click', function() {
-            window.location.href = '/webauthn-viewer/';
+            window.location.href = getAppUrl();
         });
+
+        configureLoginForm();
 
         // Check if we should auto-start passkey creation (for testing static page directly)
         window.addEventListener('load', () => {

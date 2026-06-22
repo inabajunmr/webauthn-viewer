@@ -458,7 +458,7 @@
           <div class="control">
             <label class="checkbox">
               <input type="checkbox" v-model="conditionalMeditation" />
-              conditional:meditation
+              conditional:mediation
             </label>
           </div>
         </div>
@@ -663,6 +663,8 @@
 </template>
 
 <script>
+const appBasePath = (process.env.BASE_URL || "/").replace(/\/?$/, "/");
+
 export default {
   requestQueryKeys: [
     "rpName",
@@ -1333,7 +1335,7 @@ export default {
       this.errorMessage = "";
       this.createResponse = {};
 
-      // Navigate to virtual login screen for conditional:meditation flow
+      // Navigate to virtual login screen for conditional:mediation flow
       if (this.conditionalMeditation) {
         this.redirectToLogin();
         return;
@@ -1430,7 +1432,9 @@ export default {
 
       // Navigate to static login page
       const queryString = new URLSearchParams(params).toString();
-      window.location.href = `/webauthn-viewer/login.html?${queryString}`;
+      window.location.href = queryString
+        ? `${appBasePath}login.html?${queryString}`
+        : `${appBasePath}login.html`;
     },
     generateRandomUserId() {
       this.reqUserId = require("crypto").randomBytes(32).toString("hex");
@@ -1456,7 +1460,7 @@ export default {
       console.log("🔍 loginCompleted value:", queryParams.loginCompleted);
       console.log("🔍 loginCompleted type:", typeof queryParams.loginCompleted);
 
-      // Execute conditional meditation API if login completed
+      // Execute conditional mediation API if login completed
       if (queryParams.loginCompleted === "true") {
         console.log(
           "✅ Login completed detected, calling handleLoginCompleted"
@@ -1549,7 +1553,7 @@ export default {
       }
       if (queryParams.extensions) this.reqExtensions = queryParams.extensions;
 
-      // Set conditional:meditation flag
+      // Set conditional:mediation flag
       this.conditionalMeditation = true;
 
       // Clear parameters from URL
@@ -1557,7 +1561,7 @@ export default {
 
       // Login completion message
       this.$buefy.toast.open({
-        message: `Login completed: ${queryParams.email} - Starting conditional:meditation passkey creation`,
+        message: `Login completed: ${queryParams.email} - Starting conditional:mediation passkey creation`,
         type: "is-success",
         duration: 3000,
       });
@@ -1578,7 +1582,7 @@ export default {
         this.errorMessage = "";
         this.createResponse = {};
 
-        console.log("🔄 Starting conditional:meditation passkey creation");
+        console.log("🔄 Starting conditional:mediation passkey creation");
 
         if (!navigator.credentials) {
           throw new Error(
@@ -1588,7 +1592,7 @@ export default {
 
         // Use the same buildCreateRequest logic as normal create()
         console.log(
-          "🔄 Using buildCreateRequest logic for conditional meditation"
+          "🔄 Using buildCreateRequest logic for conditional mediation"
         );
         console.log("🔄 Current req values:");
         console.log("  - reqChallenge:", this.reqChallenge);
@@ -1658,7 +1662,7 @@ export default {
           createOptions.publicKey.challenge.length
         );
 
-        console.log("conditional:meditation Create Request", createOptions);
+        console.log("conditional:mediation Create Request", createOptions);
 
         // Final user activation check before API call
         this.logUserActivationState(
@@ -1668,10 +1672,10 @@ export default {
           "🚀 Calling navigator.credentials.create with conditional mediation..."
         );
 
-        // Create passkey with conditional meditation
+        // Create passkey with conditional mediation
         const credential = await navigator.credentials.create(createOptions);
 
-        console.log("conditional:meditation Create Response", credential);
+        console.log("conditional:mediation Create Response", credential);
 
         // Set result in same format as normal createResponse
         this.createResponse = credential;
@@ -1689,17 +1693,17 @@ export default {
         }
 
         this.$buefy.toast.open({
-          message: "conditional:meditation passkey creation succeeded!",
+          message: "conditional:mediation passkey creation succeeded!",
           type: "is-success",
           duration: 4000,
         });
       } catch (error) {
-        console.log("conditional:meditation Create Error", error);
+        console.log("conditional:mediation Create Error", error);
         this.errorType = error.name;
         this.errorMessage = error.message;
 
         this.$buefy.toast.open({
-          message: `conditional:meditation passkey creation failed: ${error.message}`,
+          message: `conditional:mediation passkey creation failed: ${error.message}`,
           type: "is-danger",
           duration: 4000,
         });

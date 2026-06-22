@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vue",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/api/login"
+    },
+    {
+      "source": "/webauthn-viewer/login",
+      "destination": "/api/login"
+    },
+    {
+      "source": "/webauthn-viewer/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}

@@ -1,9 +1,13 @@
 const { defineConfig } = require('@vue/cli-service')
 
+const isVercel = Boolean(process.env.VERCEL)
+const publicPath = process.env.BASE_URL || (isVercel ? '/' : '/webauthn-viewer/')
+const outputDir = process.env.BUILD_OUTPUT_DIR || (isVercel ? 'dist' : 'docs')
+
 module.exports = defineConfig({
   transpileDependencies: true,
-  publicPath: '/webauthn-viewer/',
-  outputDir: 'docs',
+  publicPath,
+  outputDir,
   lintOnSave: false,
   configureWebpack: {
     resolve: {
