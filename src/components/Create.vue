@@ -447,19 +447,14 @@
           </div>
         </div>
         <div class="field">
-          <div class="control">
-            <label class="checkbox">
-              <input type="checkbox" v-model="conditionalMeditation" />
-              conditional:meditation
-            </label>
-          </div>
+          <b-field>
+            <b-switch v-model="conditionalMediation">
+              Conditional Create
+            </b-switch>
+          </b-field>
         </div>
-        <div v-if="conditionalMeditation" class="box conditional-login-form">
+        <div v-if="conditionalMediation" class="box conditional-login-form">
           <h4 class="title is-6">Login</h4>
-          <div class="notification is-warning is-light is-size-7">
-            <strong>Note:</strong> In Chrome, this flow has only been verified
-            with attestation: none and userVerification: discouraged.
-          </div>
           <form @submit.prevent="handleConditionalLoginSubmit">
             <div class="field">
               <label class="label is-small">User ID</label>
@@ -733,7 +728,7 @@ export default {
     "excludeCredentials",
     "hints",
     "extensions",
-    "conditionalMeditation",
+    "conditionalMediation",
   ],
   data() {
     return {
@@ -760,7 +755,7 @@ export default {
       reqHints: [],
       reqExtensions: '{ "credProps": true }',
       createResponse: {},
-      conditionalMeditation: false,
+      conditionalMediation: false,
       conditionalLoginEmail: "",
       conditionalLoginPassword: "",
       conditionalLoginLoading: false,
@@ -977,6 +972,20 @@ export default {
       }
       return Buffer.from(value).toString("hex");
     },
+    emitPasskeyUsed(credential) {
+      const credentialId = this.toHex(credential && credential.rawId);
+      if (!credentialId) {
+        return;
+      }
+      this.$emit("passkey-used", {
+        source: "create",
+        rpId: this.reqRpid,
+        credentialId,
+        userId: this.reqUserId,
+        name: this.reqUserName,
+        displayName: this.reqUserDisplayName,
+      });
+    },
     callOrRead(target, name, transform = (value) => value) {
       if (!target) {
         return "";
@@ -1079,7 +1088,7 @@ export default {
       pushValue("challenge", this.reqChallenge);
       pushValue("hints", this.reqHints);
       pushValue("extensions", this.reqExtensions);
-      pushValue("conditionalMeditation", this.conditionalMeditation);
+      pushValue("conditionalMediation", this.conditionalMediation);
 
       if (this.reqPubKeyCredParams.length > 0) {
         const sanitized = this.reqPubKeyCredParams
@@ -1317,11 +1326,14 @@ export default {
       if (Object.prototype.hasOwnProperty.call(query, "extensions")) {
         this.reqExtensions = normalizeString(pickSingle(query.extensions));
       }
-      if (
+      if (Object.prototype.hasOwnProperty.call(query, "conditionalMediation")) {
+        const value = pickSingle(query.conditionalMediation);
+        this.conditionalMediation = value === "true" || value === true;
+      } else if (
         Object.prototype.hasOwnProperty.call(query, "conditionalMeditation")
       ) {
         const value = pickSingle(query.conditionalMeditation);
-        this.conditionalMeditation = value === "true" || value === true;
+        this.conditionalMediation = value === "true" || value === true;
       }
       if (Object.prototype.hasOwnProperty.call(query, "pubKeyCredParams")) {
         const value = pickSingle(query.pubKeyCredParams);
@@ -1376,7 +1388,7 @@ export default {
       }
     },
     create() {
-      if (this.conditionalMeditation) {
+      if (this.conditionalMediation) {
         this.$buefy.toast.open({
           message: "Enter User ID and password, then press Login",
           type: "is-info",
@@ -1428,6 +1440,7 @@ export default {
             this.createResponse.response.getTransports =
               "getTransports() is undefined";
           }
+          this.emitPasskeyUsed(res);
         })
         .catch((err) => {
           console.log("Create Error", err);
@@ -1469,7 +1482,7 @@ export default {
 
       this.conditionalLoginLoading = true;
       this.$buefy.toast.open({
-        message: `Login completed: ${userInfo.email} - Starting conditional:meditation passkey creation`,
+        message: `Login completed: ${userInfo.email} - Starting conditional:mediation passkey creation`,
         type: "is-success",
         duration: 3000,
       });
@@ -1557,6 +1570,7 @@ export default {
           this.createResponse.response.getTransports =
             "getTransports() is undefined";
         }
+        this.emitPasskeyUsed(credential);
 
         this.$buefy.toast.open({
           message: "Passkey was automatically created!",

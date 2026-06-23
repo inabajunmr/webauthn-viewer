@@ -172,6 +172,12 @@
 
 <script>
 export default {
+  props: {
+    lastPasskey: {
+      type: Object,
+      default: null,
+    },
+  },
   data() {
     return {
       errorType: "",
@@ -195,7 +201,41 @@ export default {
       return null;
     }
   },
+  watch: {
+    lastPasskey: {
+      handler(passkey) {
+        this.applyLastPasskey(passkey);
+      },
+      immediate: true,
+    },
+  },
   methods: {
+    applyLastPasskey(passkey) {
+      if (!passkey) {
+        return;
+      }
+      if (passkey.rpId) {
+        this.signalUnknownCredentialRpId = passkey.rpId;
+        this.signalAllAcceptedCredentialsRpId = passkey.rpId;
+        this.signalCurrentUserDetailsRpId = passkey.rpId;
+      }
+      if (passkey.credentialId) {
+        this.signalUnknownCredentialCredentialId = passkey.credentialId;
+        this.signalAllAcceptedCredentialsAllAcceptedCredentals = [
+          { id: passkey.credentialId, r: Math.random() },
+        ];
+      }
+      if (passkey.userId) {
+        this.signalAllAcceptedCredentialsUserId = passkey.userId;
+        this.signalCurrentUserDetailsUserId = passkey.userId;
+      }
+      if (passkey.name) {
+        this.signalCurrentUserDetailsName = passkey.name;
+      }
+      if (passkey.displayName) {
+        this.signalCurrentUserDetailsDisplayName = passkey.displayName;
+      }
+    },
     isEvenLengthHex(value) {
       return (
         typeof value === "string" &&

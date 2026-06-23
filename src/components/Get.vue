@@ -221,13 +221,20 @@
               </div>
             </div>
             <div class="column">
-            <b-field>
-                <b-switch v-model="isConditionalUIEnabled" @click="conditionalUI()">
-                    Conditional UI
+              <b-field>
+                <b-switch v-model="isConditionalUIEnabled">
+                  Conditional UI
                 </b-switch>
-            </b-field>
+              </b-field>
             </div>
           </div>
+        </div>
+        <div class="field">
+          <b-field>
+            <b-switch v-model="isImmediateUIEnabled">
+              Immediate UI
+            </b-switch>
+          </b-field>
         </div>
 
 
@@ -391,6 +398,8 @@ export default {
     "hints",
     "extensions",
     "conditionalUi",
+    "immediateUi",
+    "immediateMediation",
   ],
   data() {
     return {
@@ -398,6 +407,7 @@ export default {
       errorMessage: "",
       suggestionOptions: webauthnSuggestionOptions,
       isConditionalUIEnabled: false,
+      isImmediateUIEnabled: false,
       reqRpid: window.location.hostname,
       reqAllowCredentials: [],
       reqTimeout: 60000,
@@ -519,6 +529,7 @@ export default {
           .then(res => {
             console.log("Get Response", res);
             this.getResponse = res;
+            this.emitPasskeyUsed(res);
           })
           .catch(err => {
             console.log("Get Error", err);
@@ -544,6 +555,21 @@ export default {
         return "";
       }
       return Buffer.from(value).toString("hex");
+    },
+    emitPasskeyUsed(credential) {
+      const credentialId = this.toHex(credential && credential.rawId);
+      if (!credentialId) {
+        return;
+      }
+      const passkey = {
+        source: "get",
+        rpId: this.reqRpid,
+        credentialId,
+      };
+      if (credential.response && credential.response.userHandle) {
+        passkey.userId = this.toHex(credential.response.userHandle);
+      }
+      this.$emit("passkey-used", passkey);
     },
     callOrRead(target, name, transform = (value) => value) {
       if (!target) {
@@ -625,6 +651,7 @@ export default {
       pushValue("hints", this.reqHints);
       pushValue("extensions", this.reqExtensions);
       pushValue("conditionalUi", this.isConditionalUIEnabled);
+      pushValue("immediateUi", this.isImmediateUIEnabled);
 
       if (this.reqAllowCredentials.length > 0) {
         const sanitized = this.reqAllowCredentials
@@ -787,6 +814,15 @@ export default {
         const value = pickSingle(query.conditionalUi);
         this.isConditionalUIEnabled = value === "true" || value === true;
       }
+      if (Object.prototype.hasOwnProperty.call(query, "immediateUi")) {
+        const value = pickSingle(query.immediateUi);
+        this.isImmediateUIEnabled = value === "true" || value === true;
+      } else if (
+        Object.prototype.hasOwnProperty.call(query, "immediateMediation")
+      ) {
+        const value = pickSingle(query.immediateMediation);
+        this.isImmediateUIEnabled = value === "true" || value === true;
+      }
       if (Object.prototype.hasOwnProperty.call(query, "allowCredentials")) {
         const raw = pickSingle(query.allowCredentials);
         const parsed = this.safeParseJson(raw, null);
@@ -821,6 +857,58 @@ export default {
         console.warn("Failed to parse JSON from query parameter:", error);
         return fallback;
       }
+    },
+    async isImmediateUIAvailable() {
+      if (!this.isImmediateUIEnabled) {
+        return true;
+      }
+      if (
+        !window.PublicKeyCredential ||
+        typeof window.PublicKeyCredential.getClientCapabilities !== "function"
+      ) {
+        this.errorType = "NotSupportedError";
+        this.errorMessage =
+          "Immediate UI requires PublicKeyCredential.getClientCapabilities().";
+        return false;
+      }
+
+      try {
+        const capabilities =
+          await window.PublicKeyCredential.getClientCapabilities();
+        if (!capabilities || !capabilities.immediateGet) {
+          this.errorType = "NotSupportedError";
+          this.errorMessage =
+            "Immediate UI mode is not available. Use Chrome 149+ or a Chrome build with Immediate UI enabled.";
+          return false;
+        }
+      } catch (error) {
+        console.log("getClientCapabilities Error", error);
+        this.errorType = error.name;
+        this.errorMessage = error.message;
+        return false;
+      }
+
+      return true;
+    },
+    isImmediateUIEnumError(error) {
+      return (
+        this.isImmediateUIEnabled &&
+        error &&
+        typeof error.message === "string" &&
+        error.message.indexOf("immediate") !== -1 &&
+        error.message.indexOf("uiMode") !== -1
+      );
+    },
+    setGetError(error) {
+      console.log("Get Error", error);
+      this.errorType = error.name;
+      if (this.isImmediateUIEnumError(error)) {
+        this.errorMessage =
+          'The immediateGet capability check passed, but this context still rejects uiMode: "immediate". Use Chrome 149+ or a Chrome build with Immediate UI enabled. Raw error: ' +
+          error.message;
+        return;
+      }
+      this.errorMessage = error.message;
     },
     buildGetRequest() {
       let request = {};
@@ -862,7 +950,7 @@ export default {
       request.publicKey.challenge = Buffer.from(this.reqChallenge, "hex");
       return request;
     },    
-    get() {
+    async get() {
       // reset
       this.errorType = "";
       this.errorMessage = "";
@@ -878,19 +966,33 @@ export default {
         return;
       }
 
+      if (
+        this.isImmediateUIEnabled &&
+        request.publicKey.allowCredentials.length > 0
+      ) {
+        this.errorType = "NotAllowedError";
+        this.errorMessage =
+          "Immediate UI does not support allowCredentials. Remove allowCredentials and try again.";
+        return;
+      }
+      if (this.isImmediateUIEnabled) {
+        if (!(await this.isImmediateUIAvailable())) {
+          return;
+        }
+        request.uiMode = "immediate";
+        delete request.publicKey.allowCredentials;
+      }
+
       // call webauthn api
       console.log("Get Request", request);
-      navigator.credentials
-        .get(request)
-        .then(res => {
-          console.log("Get Response", res);
-          this.getResponse = res;
-        })
-        .catch(err => {
-          console.log("Get Error", err);
-          this.errorType = err.name;
-          this.errorMessage = err.message;
-        });
+      try {
+        const res = await navigator.credentials.get(request);
+        console.log("Get Response", res);
+        this.getResponse = res;
+        this.emitPasskeyUsed(res);
+      } catch (err) {
+        this.setGetError(err);
+      }
     },
     generateChallenge() {
       this.reqChallenge = require("crypto")

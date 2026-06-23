@@ -2,15 +2,15 @@
   <div>
     <b-tabs>
       <b-tab-item label="create">
-        <Create />
+        <Create @passkey-used="setLastPasskey" />
       </b-tab-item>
 
       <b-tab-item label="get">
-        <Get />
+        <Get @passkey-used="setLastPasskey" />
       </b-tab-item>
 
       <b-tab-item label="signal">
-        <Signal />
+        <Signal :last-passkey="lastPasskey" />
       </b-tab-item>
 
       <b-tab-item label="capabilities">
@@ -33,6 +33,16 @@ export default {
     Get,
     Signal,
     ClientCapabilities,
+  },
+  data() {
+    return {
+      lastPasskey: null,
+    };
+  },
+  methods: {
+    setLastPasskey(passkey) {
+      this.lastPasskey = Object.assign({}, passkey);
+    },
   },
 };
 </script>
