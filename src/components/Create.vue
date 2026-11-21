@@ -400,7 +400,7 @@
                   class="input is-small"
                   type="text"
                   placeholder="challenge"
-                  v-model="this.reqChallenge"
+                  v-model="reqChallenge"
                 />
               </div>
             </div>
@@ -701,13 +701,17 @@
 </template>
 
 <script>
+import { Buffer } from "buffer";
+import { decodeAllSync, decodeFirstSync } from "cbor";
 import SuggestTextInput from "./SuggestTextInput.vue";
+import { randomHex } from "../randomHex";
 import { webauthnSuggestionOptions } from "../webauthnSuggestionOptions";
 
 export default {
   components: {
     SuggestTextInput,
   },
+  emits: ["passkey-used"],
   requestQueryKeys: [
     "rpName",
     "rpId",
@@ -738,7 +742,7 @@ export default {
       reqRpName: "Acme",
       reqRpid: window.location.hostname,
       reqRpIcon: "",
-      reqUserId: this.generateRandomUserId(),
+      reqUserId: randomHex(),
       reqUserName: "john.p.smith@example.com",
       reqUserIcon: "",
       reqUserDisplayName: "John P. Smith",
@@ -750,7 +754,7 @@ export default {
       reqAttestation: "direct",
       reqAttestationFormats: [],
       reqTimeout: 60000,
-      reqChallenge: this.generateChallenge(),
+      reqChallenge: randomHex(),
       reqExcludeCredentials: [],
       reqHints: [],
       reqExtensions: '{ "credProps": true }',
@@ -875,11 +879,8 @@ export default {
         );
 
         /** attestationObject */
-        const cbor = require("cbor");
-        const vanillacbor = require("vanillacbor");
-
-        let attestationObject = cbor.decodeAllSync(
-          new Buffer(this.createResponse.response.attestationObject)
+        let attestationObject = decodeAllSync(
+          Buffer.from(this.createResponse.response.attestationObject)
         )[0];
         result.fmt = attestationObject.fmt;
         result.attStmt = attestationObject.attStmt;
@@ -924,19 +925,20 @@ export default {
           buffer = buffer.slice(credIdLen);
           result.credentialId = credIdBuffer.toString("hex");
 
-          let pubKeyLength = vanillacbor.decodeOnlyFirst(buffer).byteLength;
+          const { length: pubKeyLength } = decodeFirstSync(buffer, {
+            extendedResults: true,
+          });
           let cosePublicKeyBuffer = buffer.slice(0, pubKeyLength);
           buffer = buffer.slice(pubKeyLength);
           result.credentialPublicKey = cosePublicKeyBuffer.toString("hex");
         }
 
         if (result.ed) {
-          let extensionsDataLength =
-            vanillacbor.decodeOnlyFirst(buffer).byteLength;
+          const { length: extensionsDataLength, value: extensions } =
+            decodeFirstSync(buffer, { extendedResults: true });
           result.extensionsDataLength = extensionsDataLength;
-          let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
           buffer = buffer.slice(extensionsDataLength);
-          result.extensions = cbor.decodeAllSync(coseExtensionsDataBuffer)[0];
+          result.extensions = extensions;
         }
 
         if (buffer.byteLength)
@@ -1012,7 +1014,7 @@ export default {
       }
       try {
         return JSON.stringify(value);
-      } catch (error) {
+      } catch {
         return String(value);
       }
     },
@@ -1449,11 +1451,11 @@ export default {
         });
     },
     generateRandomUserId() {
-      this.reqUserId = require("crypto").randomBytes(32).toString("hex");
+      this.reqUserId = randomHex();
       return this.reqUserId;
     },
     generateChallenge() {
-      this.reqChallenge = require("crypto").randomBytes(32).toString("hex");
+      this.reqChallenge = randomHex();
       return this.reqChallenge;
     },
     addExcludeCredentials() {

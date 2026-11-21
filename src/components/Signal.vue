@@ -171,6 +171,9 @@
 </template>
 
 <script>
+import { Buffer } from "buffer";
+import { randomHex } from "../randomHex";
+
 export default {
   props: {
     lastPasskey: {
@@ -183,11 +186,11 @@ export default {
       errorType: "",
       errorMessage: "",
       signalCurrentUserDetailsRpId: window.location.hostname,
-      signalCurrentUserDetailsUserId: this.generateRandomUserId(),
+      signalCurrentUserDetailsUserId: randomHex(),
       signalCurrentUserDetailsName: "john.p.smith@example.com",
       signalCurrentUserDetailsDisplayName: "John P. Smith",
       signalAllAcceptedCredentialsRpId: window.location.hostname,
-      signalAllAcceptedCredentialsUserId: this.generateRandomUserId(),
+      signalAllAcceptedCredentialsUserId: randomHex(),
       signalAllAcceptedCredentialsAllAcceptedCredentals: [],
       signalUnknownCredentialRpId: window.location.hostname,
       signalUnknownCredentialCredentialId: ""
@@ -264,12 +267,6 @@ export default {
         return this.toBase64UrlFromHex(normalized);
       }
       return normalized;
-    },
-    generateRandomUserId() {
-      this.reqUserId = require("crypto")
-        .randomBytes(32)
-        .toString("hex");
-      return this.reqUserId;
     },
     signalUnknownCredential() {
       if(!window.PublicKeyCredential.signalUnknownCredential) {

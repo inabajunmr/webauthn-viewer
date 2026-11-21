@@ -7,6 +7,9 @@ https://inabajunmr.github.io/webauthn-viewer/
 ![image](image.gif)
 
 ## Project setup
+
+Use Node.js 20.19+ (20.x), 22.13+ (22.x), or 24+.
+
 ```
 npm install
 ```
@@ -21,7 +24,7 @@ npm run serve
 npm run build
 ```
 
-### over nodejs 7
+### Lint
 ```
-export NODE_OPTIONS=--openssl-legacy-provider
+npm run lint
 ```

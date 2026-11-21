@@ -1,13 +1,13 @@
-import Vue from "vue";
+import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
-import Buefy from "buefy";
-import "buefy/dist/buefy.css";
+import { Field, Switch, Tabs, Toast } from "buefy";
+import "buefy/dist/css/buefy.css";
 
-Vue.config.productionTip = false;
-Vue.use(Buefy);
-
-new Vue({
-  router,
-  render: h => h(App)
-}).$mount("#app");
+createApp(App)
+  .use(router)
+  .use(Field)
+  .use(Switch)
+  .use(Tabs)
+  .use(Toast)
+  .mount("#app");

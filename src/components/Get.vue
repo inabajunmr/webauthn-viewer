@@ -382,13 +382,17 @@
 </template>
 
 <script>
+import { Buffer } from "buffer";
+import { decodeFirstSync } from "cbor";
 import SuggestTextInput from "./SuggestTextInput.vue";
+import { randomHex } from "../randomHex";
 import { webauthnSuggestionOptions } from "../webauthnSuggestionOptions";
 
 export default {
   components: {
     SuggestTextInput,
   },
+  emits: ["passkey-used"],
   requestQueryKeys: [
     "rpid",
     "allowCredentials",
@@ -411,7 +415,7 @@ export default {
       reqRpid: window.location.hostname,
       reqAllowCredentials: [],
       reqTimeout: 60000,
-      reqChallenge: this.generateChallenge(),
+      reqChallenge: randomHex(),
       reqUserVerification: "preferred",
       reqHints: [],
       reqExtensions: "",
@@ -441,9 +445,6 @@ export default {
           this.getResponse.response.clientDataJSON
         );
 
-        /** attestationObject */
-        const vanillacbor = require("vanillacbor");
-
         let buffer = Buffer.from(
           this.getResponse.response.authenticatorData,
           "base64"
@@ -469,14 +470,12 @@ export default {
         buffer = buffer.slice(4);
 
         if (result.ed) {
-          let extensionsDataLength = vanillacbor.decodeOnlyFirst(buffer)
-            .byteLength;
-
-          let coseExtensionsDataBuffer = buffer.slice(0, extensionsDataLength);
-          buffer = buffer.slice(extensionsDataLength);
-          result.coseExtensionsDataBuffer = coseExtensionsDataBuffer.toString(
-            "hex"
+          const { length: extensionsDataLength, bytes } = decodeFirstSync(
+            buffer,
+            { extendedResults: true }
           );
+          buffer = buffer.slice(extensionsDataLength);
+          result.coseExtensionsDataBuffer = bytes.toString("hex");
         }
 
         result.userHandle = Array.prototype.map
@@ -594,7 +593,7 @@ export default {
       }
       try {
         return JSON.stringify(value);
-      } catch (error) {
+      } catch {
         return String(value);
       }
     },
@@ -992,9 +991,7 @@ export default {
       }
     },
     generateChallenge() {
-      this.reqChallenge = require("crypto")
-        .randomBytes(32)
-        .toString("hex");
+      this.reqChallenge = randomHex();
       return this.reqChallenge;
     },
     addAllowCredentials() {

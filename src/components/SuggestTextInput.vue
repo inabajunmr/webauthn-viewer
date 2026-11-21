@@ -39,7 +39,7 @@
 export default {
   name: "SuggestTextInput",
   props: {
-    value: {
+    modelValue: {
       type: [String, Number, Boolean],
       default: "",
     },
@@ -52,6 +52,7 @@ export default {
       default: () => [],
     },
   },
+  emits: ["update:modelValue"],
   data() {
     return {
       isOpen: false,
@@ -61,10 +62,10 @@ export default {
   },
   computed: {
     inputValue() {
-      if (this.value === null || this.value === undefined) {
+      if (this.modelValue === null || this.modelValue === undefined) {
         return "";
       }
-      return String(this.value);
+      return String(this.modelValue);
     },
     normalizedOptions() {
       return this.options.map(option => {
@@ -113,7 +114,7 @@ export default {
     handleInput(event) {
       this.shouldFilter = true;
       this.isOpen = true;
-      this.$emit("input", event.target.value);
+      this.$emit("update:modelValue", event.target.value);
       this.$nextTick(this.resetActiveIndex);
     },
     handleEnter(event) {
@@ -143,7 +144,7 @@ export default {
       this.activeIndex = this.visibleOptions.length > 0 ? 0 : -1;
     },
     selectOption(value) {
-      this.$emit("input", value);
+      this.$emit("update:modelValue", value);
       this.closeMenu();
       this.$nextTick(() => {
         this.$refs.input.focus();
