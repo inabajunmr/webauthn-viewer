@@ -322,53 +322,13 @@
             <div class="column">
               <label class="label is-small">.transports</label>
               <div class="control" style="font-size: 0.75rem">
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="usb"
-                    v-model="excludeCredential.transports"
-                  />
-                  usb
-                </label>
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="ble"
-                    v-model="excludeCredential.transports"
-                  />
-                  ble
-                </label>
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="nfc"
-                    v-model="excludeCredential.transports"
-                  />
-                  nfc
-                </label>
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="internal"
-                    v-model="excludeCredential.transports"
-                  />
-                  internal
-                </label>
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="hybrid"
-                    v-model="excludeCredential.transports"
-                  />
-                  hybrid
-                </label>
-                <label class="checkbox">
-                  <input
-                    type="checkbox"
-                    value="smart-card"
-                    v-model="excludeCredential.transports"
-                  />
-                  smart-card
+                <label
+                  v-for="transport in suggestionOptions.transports"
+                  :key="transport"
+                  class="checkbox"
+                >
+                  <input type="checkbox" :value="transport" v-model="excludeCredential.transports" />
+                  {{ transport }}
                 </label>
               </div>
             </div>
@@ -417,17 +377,13 @@
         <div class="field">
           <label class="label is-small">hints</label>
           <div class="control" style="font-size: 0.75rem">
-            <label class="checkbox">
-              <input type="checkbox" value="security-key" v-model="reqHints" />
-              security-key
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" value="client-device" v-model="reqHints" />
-              client-device
-            </label>
-            <label class="checkbox">
-              <input type="checkbox" value="hybrid" v-model="reqHints" />
-              hybrid
+            <label
+              v-for="hint in suggestionOptions.hints"
+              :key="hint"
+              class="checkbox"
+            >
+              <input type="checkbox" :value="hint" v-model="reqHints" />
+              {{ hint }}
             </label>
           </div>
         </div>

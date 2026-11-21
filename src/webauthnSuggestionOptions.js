@@ -1,5 +1,7 @@
+import { webauthnSpecSuggestions } from "./webauthnSpecSuggestions.js";
+
 export const webauthnSuggestionOptions = Object.freeze({
-  credentialTypes: Object.freeze(["public-key"]),
+  ...webauthnSpecSuggestions,
   coseAlgorithms: Object.freeze([
     { value: "-7", label: "ES256" },
     { value: "-8", label: "EdDSA" },
@@ -12,9 +14,5 @@ export const webauthnSuggestionOptions = Object.freeze({
     { value: "-258", label: "RS384" },
     { value: "-259", label: "RS512" },
   ]),
-  attestation: Object.freeze(["none", "direct", "indirect", "enterprise"]),
-  authenticatorAttachment: Object.freeze(["platform", "cross-platform"]),
   boolean: Object.freeze(["true", "false"]),
-  residentKey: Object.freeze(["required", "preferred", "discouraged"]),
-  userVerification: Object.freeze(["required", "preferred", "discouraged"]),
 });

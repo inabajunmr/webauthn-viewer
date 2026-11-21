@@ -8,7 +8,9 @@
   "scripts": {
     "serve": "vite --port 8080",
     "build": "vite build",
-    "lint": "eslint src *.config.mjs"
+    "lint": "eslint src *.config.mjs",
+    "test:spec": "node --test tests/webauthn-spec.test.mjs && node scripts/webauthn-spec.mjs --check",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "buefy": "^3.1.0",
@@ -22,14 +24,17 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
     "@vitejs/plugin-legacy": "^8.2.4",
     "@vitejs/plugin-vue": "^6.0.11",
     "eslint": "^10.15.0",
     "eslint-plugin-vue": "^10.12.1",
     "globals": "^17.14.0",
+    "parse5": "^8.1.1",
     "terser": "^5.51.4",
     "vite": "^8.3.8",
-    "vue-eslint-parser": "^10.4.2"
+    "vue-eslint-parser": "^10.4.2",
+    "webidl2": "^24.5.0"
   },
   "browserslist": [
     "> 1%",
