@@ -151,7 +151,7 @@
                   class="input is-small"
                   type="text"
                   placeholder="challenge"
-                  v-model="challengeForView"
+                  v-model="reqChallenge"
                 />
               </div>
             </div>
@@ -420,9 +420,6 @@ export default {
     };
   },
   computed: {
-    challengeForView: function() {
-      return this.reqChallenge.toString("hex");
-    },
     getResponseView: function() {
       // refference https://medium.com/@herrjemand/verifying-fido2-responses-4691288c8770
       let result = {};

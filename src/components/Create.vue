@@ -231,10 +231,10 @@
             <label class="checkbox">
               <input
                 type="checkbox"
-                value="apple-anonymous"
+                value="apple"
                 v-model="reqAttestationFormats"
               />
-              apple-anonymous
+              apple
             </label>
             <label class="checkbox">
               <input
@@ -1502,29 +1502,17 @@ export default {
       };
     },
 
-    checkLoginAutoUpgradeSupport() {
-      if (!window.PublicKeyCredential) {
-        console.log("❌ WebAuthn is not supported in this browser");
+    async checkLoginAutoUpgradeSupport() {
+      if (
+        !window.PublicKeyCredential ||
+        typeof window.PublicKeyCredential.getClientCapabilities !== "function"
+      ) {
         return false;
       }
 
-      console.log("✅ WebAuthn is supported");
-
-      if (PublicKeyCredential.isConditionalMediationAvailable) {
-        PublicKeyCredential.isConditionalMediationAvailable().then(
-          (available) => {
-            if (available) {
-              console.log("✅ Conditional Mediation がサポートされています");
-            } else {
-              console.log("⚠️ Conditional Mediation はサポートされていません");
-            }
-          }
-        );
-      } else {
-        console.log("⚠️ Conditional Mediation のサポート確認ができません");
-      }
-
-      return true;
+      const capabilities =
+        await window.PublicKeyCredential.getClientCapabilities();
+      return !!(capabilities && capabilities.conditionalCreate);
     },
 
     async executeLoginAutoUpgrade(userInfo) {
@@ -1536,8 +1524,11 @@ export default {
         this.errorMessage = "";
         this.createResponse = {};
 
-        if (!this.checkLoginAutoUpgradeSupport()) {
-          throw new Error("This browser does not support WebAuthn");
+        if (!(await this.checkLoginAutoUpgradeSupport())) {
+          throw new DOMException(
+            "Conditional Create is not supported in this browser.",
+            "NotSupportedError"
+          );
         }
         if (!navigator.credentials) {
           throw new Error(
