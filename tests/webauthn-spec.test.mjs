@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compareSnapshots, readSnapshot, renderSuggestions } from "../scripts/webauthn-spec.mjs";
+import { compareSnapshots, readSnapshot, readSpecReference, renderSuggestions } from "../scripts/webauthn-spec.mjs";
 
 function publishedIdl(idl) {
   return `
@@ -47,4 +47,16 @@ test("requires review for new fields, enum removals, and new enums", () => {
   assert.equal(changes.length, 3);
   assert.ok(changes.every(change => !change.automatic));
   assert.ok(changes[0].added.includes("DOMString extra ;"));
+});
+
+test("extracts visible specification reference text and preserves section anchors", () => {
+  const reference = readSpecReference(`
+    <h2 id="extension">Extension</h2><p>Process the request.</p>
+    <ol><li>Validate input.</li><li>Return a result.</li></ol>
+    <script>hidden script</script><!-- hidden comment -->
+    <p hidden>hidden content</p><aside>hidden sidebar</aside>
+  `);
+  assert.match(reference, /Extension \[#extension\]\s+Process the request\./);
+  assert.match(reference, /Validate input\.\s+Return a result\./);
+  assert.doesNotMatch(reference, /hidden/);
 });

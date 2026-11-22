@@ -72,13 +72,26 @@ jobs:
           AUTO_MERGE: ${{ steps.spec.outputs.auto_merge }}
         run: bash scripts/open-webauthn-spec-pr.sh
 
-  check:
+  implement:
     needs: sync
-    if: needs.sync.outputs.commit != ''
-    uses: ./.github/workflows/webauthn-ci.yml
+    if: needs.sync.outputs.commit != '' && needs.sync.outputs.auto_merge == 'false'
+    uses: ./.github/workflows/webauthn-codex.yml
+    permissions:
+      contents: write
+      pull-requests: read
     with:
       commit: ${{ needs.sync.outputs.commit }}
-      check_pages_build: ${{ needs.sync.outputs.check_pages_build == 'true' }}
+      number: ${{ needs.sync.outputs.number }}
+    secrets:
+      openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+
+  check:
+    needs: [sync, implement]
+    if: ${{ !cancelled() && needs.sync.result == 'success' && needs.sync.outputs.commit != '' }}
+    uses: ./.github/workflows/webauthn-ci.yml
+    with:
+      commit: ${{ needs.implement.outputs.commit || needs.sync.outputs.commit }}
+      check_pages_build: ${{ needs.implement.outputs.commit != '' || needs.sync.outputs.check_pages_build == 'true' }}
 
   merge:
     needs: [sync, check]
