@@ -40,6 +40,35 @@ function textContent(node) {
   return (node.childNodes ?? []).map(textContent).join("");
 }
 
+const referenceBlocks = new Set([
+  "dd", "div", "dl", "dt", "li", "ol", "p", "pre", "section", "table", "tr", "ul",
+]);
+const ignoredReferenceTags = new Set(["aside", "details", "nav", "script", "style", "svg", "template"]);
+
+export function readSpecReference(html) {
+  const body = findNode(parseHtml(html), node => node.tagName === "body");
+  function render(node) {
+    if (node.nodeName === "#text") {
+      return node.value;
+    }
+    if (ignoredReferenceTags.has(node.tagName) || node.attrs?.some(attr =>
+      attr.name === "hidden" || (attr.name === "aria-hidden" && attr.value === "true"),
+    )) {
+      return "";
+    }
+    const text = (node.childNodes ?? []).map(render).join("");
+    if (/^h[1-6]$/.test(node.tagName ?? "")) {
+      const id = node.attrs.find(attr => attr.name === "id")?.value;
+      return `\n\n${text.trim()}${id ? ` [#${id}]` : ""}\n`;
+    }
+    if (referenceBlocks.has(node.tagName)) {
+      return `\n${text.trim()}\n`;
+    }
+    return node.tagName === "td" || node.tagName === "th" ? `${text} | ` : text;
+  }
+  return render(body).replace(/\n[ \t]*\n(?:[ \t]*\n)*/g, "\n\n").trim();
+}
+
 function signature(node) {
   return writeIdl([node], { templates: { trivia: () => " " } }).trim();
 }
@@ -192,6 +221,14 @@ async function fetchPublishedSpec() {
 async function main(args) {
   const previousJson = await readOptional(snapshotFile);
   const previous = previousJson ? JSON.parse(previousJson) : null;
+  if (args.length === 1 && args[0] === "--codex-reference") {
+    const html = await fetchPublishedSpec();
+    if (!previous || compareSnapshots(previous, readSnapshot(html)).length) {
+      throw new Error("The published WebAuthn IDL changed after the draft PR was created.");
+    }
+    console.log(readSpecReference(html));
+    return;
+  }
   const previousSuggestions = await readOptional(suggestionsFile);
   if (args.length === 1 && args[0] === "--check") {
     if (!previous || renderSuggestions(previous) !== previousSuggestions) {
@@ -200,7 +237,7 @@ async function main(args) {
     return;
   }
   if (args.length && !(args.length === 2 && args[0] === "--source")) {
-    throw new Error(`Usage: node ${fileURLToPath(import.meta.url)} [--check | --source FILE]`);
+    throw new Error(`Usage: node ${fileURLToPath(import.meta.url)} [--check | --source FILE | --codex-reference]`);
   }
 
   const html = args.length ? await readFile(args[1], "utf8") : await fetchPublishedSpec();
