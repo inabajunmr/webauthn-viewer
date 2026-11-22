@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compareSnapshots, readSnapshot, readSpecReference, renderSuggestions } from "../scripts/webauthn-spec.mjs";
+import { compareSnapshots, readPublicationUrl, readSnapshot, readSpecReference, renderSuggestions } from "../scripts/webauthn-spec.mjs";
 
 function publishedIdl(idl) {
   return `
@@ -59,4 +59,11 @@ test("extracts visible specification reference text and preserves section anchor
   assert.match(reference, /Extension \[#extension\]\s+Process the request\./);
   assert.match(reference, /Validate input\.\s+Return a result\./);
   assert.doesNotMatch(reference, /hidden/);
+});
+
+test("uses the dated W3C publication and rejects external version URLs", () => {
+  const version = "https://www.w3.org/TR/2026/WD-webauthn-4-20260915/";
+  const metadata = url => `<dl><dt>This version:</dt><dd><a href="${url}">Spec</a></dd></dl>`;
+  assert.equal(readPublicationUrl(metadata(version)), version);
+  assert.throws(() => readPublicationUrl(metadata("https://example.test/spec")), /dated Level 4 URL/);
 });

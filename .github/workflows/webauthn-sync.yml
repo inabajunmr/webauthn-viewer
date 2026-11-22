@@ -1,4 +1,4 @@
-name: Sync WebAuthn Level 4
+name: Review WebAuthn Level 4 with Codex
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Open a pull request if the published spec has changed
+        description: Open a pull request if Codex proposes an update
         type: boolean
         default: false
 
@@ -19,18 +19,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  sync:
+  propose:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-      pull-requests: write
+    timeout-minutes: 30
     outputs:
-      number: ${{ steps.pr.outputs.number }}
-      commit: ${{ steps.pr.outputs.commit }}
-      auto_merge: ${{ steps.spec.outputs.auto_merge }}
-      check_pages_build: ${{ steps.spec.outputs.suggestions_changed }}
+      artifact: ${{ steps.patch.outputs.artifact }}
+      publication: ${{ steps.reference.outputs.publication }}
+      digest: ${{ steps.reference.outputs.digest }}
+      candidate_additions: ${{ steps.reference.outputs.candidate_additions }}
       scheduled_check: ${{ steps.schedule.outputs.run }}
     steps:
       - name: Check the schedule
@@ -42,6 +39,15 @@ jobs:
           if [[ "$EVENT" == workflow_dispatch || "$day" -le 7 ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Check the OpenAI API key configuration
+        if: steps.schedule.outputs.run == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Set the OPENAI_API_KEY repository secret."
+            exit 1
+          fi
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         if: steps.schedule.outputs.run == 'true'
         with:
@@ -51,51 +57,88 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - if: steps.schedule.outputs.run == 'true'
-        run: npm ci
-      - name: Compare the W3C publication
+      - name: Prepare dependencies and the W3C publications
         if: steps.schedule.outputs.run == 'true'
-        id: spec
+        id: reference
         run: |
-          node scripts/webauthn-spec.mjs > "$RUNNER_TEMP/webauthn-spec.md"
-          cat "$RUNNER_TEMP/webauthn-spec.md" >> "$GITHUB_STEP_SUMMARY"
-      - name: Rebuild the Pages files
-        if: steps.spec.outputs.suggestions_changed == 'true'
-        run: npm run build
-      - name: Open the update PR
+          npm ci
+          npx playwright install --with-deps chromium
+          node scripts/webauthn-spec.mjs --prepare "$RUNNER_TEMP/webauthn-reference"
+          cp .github/codex/prompts/webauthn-spec.md "$RUNNER_TEMP/webauthn-prompt.md"
+          printf '\nReference directory: `%s/webauthn-reference`.\n' "$RUNNER_TEMP" >> "$RUNNER_TEMP/webauthn-prompt.md"
+      - name: Run Codex
+        if: steps.schedule.outputs.run == 'true'
+        uses: openai/codex-action@306c6a196a99dcc6582530c396a19d2672d5e9ec # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: ${{ runner.temp }}/webauthn-prompt.md
+          permission-profile: ":workspace"
+          safety-strategy: drop-sudo
+          allow-bots: true
+          codex-version: "0.171.0"
+          codex-args: '["--ephemeral"]'
+      - name: Export the implementation patch
+        id: patch
+        if: steps.schedule.outputs.run == 'true'
+        run: |
+          git add -A -- src tests docs spec/webauthn-4.json
+          if git diff --cached --quiet "$GITHUB_SHA" -- src; then
+            echo "Codex proposed no viewer changes. See the Codex step for its assessment." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cmp spec/webauthn-4.json "$RUNNER_TEMP/webauthn-reference/webauthn-4.json"
+          cmp src/webauthnSpecSuggestions.js "$RUNNER_TEMP/webauthn-reference/webauthnSpecSuggestions.js"
+          git diff --cached --binary --no-renames --no-ext-diff --no-textconv "$GITHUB_SHA" -- src tests docs spec/webauthn-4.json > "$RUNNER_TEMP/webauthn-codex.patch"
+          echo "artifact=webauthn-codex-patch-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: steps.patch.outputs.artifact != ''
+        with:
+          name: ${{ steps.patch.outputs.artifact }}
+          path: ${{ runner.temp }}/webauthn-codex.patch
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: propose
+    if: needs.propose.outputs.artifact != '' && (github.event_name == 'schedule' || inputs.publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      commit: ${{ steps.pr.outputs.commit }}
+      auto_merge: ${{ steps.pr.outputs.auto_merge }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: ${{ needs.propose.outputs.artifact }}
+          path: ${{ runner.temp }}/webauthn-proposal
+      - name: Open the Codex update PR
         id: pr
-        if: steps.spec.outputs.changed == 'true' && (github.event_name == 'schedule' || inputs.publish)
         env:
           GH_TOKEN: ${{ github.token }}
           BASE_BRANCH: ${{ github.event.repository.default_branch }}
-          SPEC_DIGEST: ${{ steps.spec.outputs.digest }}
-          AUTO_MERGE: ${{ steps.spec.outputs.auto_merge }}
-        run: bash scripts/open-webauthn-spec-pr.sh
-
-  implement:
-    needs: sync
-    if: needs.sync.outputs.commit != '' && needs.sync.outputs.auto_merge == 'false'
-    uses: ./.github/workflows/webauthn-codex.yml
-    permissions:
-      contents: write
-      pull-requests: read
-    with:
-      commit: ${{ needs.sync.outputs.commit }}
-      number: ${{ needs.sync.outputs.number }}
-    secrets:
-      openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          SPEC_PUBLICATION: ${{ needs.propose.outputs.publication }}
+          SPEC_DIGEST: ${{ needs.propose.outputs.digest }}
+          CANDIDATE_ADDITIONS: ${{ needs.propose.outputs.candidate_additions }}
+        run: bash scripts/open-webauthn-spec-pr.sh "$RUNNER_TEMP/webauthn-proposal/webauthn-codex.patch"
 
   check:
-    needs: [sync, implement]
-    if: ${{ !cancelled() && needs.sync.result == 'success' && needs.sync.outputs.commit != '' }}
+    needs: publish
+    if: needs.publish.outputs.commit != ''
     uses: ./.github/workflows/webauthn-ci.yml
     with:
-      commit: ${{ needs.implement.outputs.commit || needs.sync.outputs.commit }}
-      check_pages_build: ${{ needs.implement.outputs.commit != '' || needs.sync.outputs.check_pages_build == 'true' }}
+      commit: ${{ needs.publish.outputs.commit }}
+      check_pages_build: true
 
   merge:
-    needs: [sync, check]
-    if: needs.sync.outputs.auto_merge == 'true' && needs.check.result == 'success'
+    needs: [publish, check]
+    if: needs.publish.outputs.auto_merge == 'true' && needs.check.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -104,8 +147,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       BASE_BRANCH: ${{ github.event.repository.default_branch }}
-      PR_NUMBER: ${{ needs.sync.outputs.number }}
-      HEAD_COMMIT: ${{ needs.sync.outputs.commit }}
+      PR_NUMBER: ${{ needs.publish.outputs.number }}
+      HEAD_COMMIT: ${{ needs.publish.outputs.commit }}
     steps:
       - name: Squash-merge the tested PR
         run: |
@@ -136,8 +179,8 @@ jobs:
         run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" --silent
 
   keep-schedule-active:
-    needs: sync
-    if: always() && github.event_name == 'schedule' && needs.sync.outputs.scheduled_check == 'true'
+    needs: propose
+    if: always() && github.event_name == 'schedule' && needs.propose.outputs.scheduled_check == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

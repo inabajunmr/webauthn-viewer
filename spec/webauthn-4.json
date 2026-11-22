@@ -1,4 +1,5 @@
 {
+  "publication": "https://www.w3.org/TR/2026/WD-webauthn-4-20260915/",
   "definitions": {
     "AllAcceptedCredentialsOptions": [
       "dictionary AllAcceptedCredentialsOptions",
