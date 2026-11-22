@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { parse as parseHtml } from "parse5";
 import { parse as parseIdl, write as writeIdl } from "webidl2";
 
@@ -8,6 +9,7 @@ const specUrl = "https://www.w3.org/TR/webauthn-4/";
 const specFolder = new URL("../spec/", import.meta.url);
 const snapshotFile = new URL("webauthn-4.json", specFolder);
 const suggestionsFile = new URL("../src/webauthnSpecSuggestions.js", import.meta.url);
+const versionUrlPattern = /^https:\/\/www\.w3\.org\/TR\/\d{4}\/[A-Z]+-webauthn-4-\d{8}\/$/;
 
 // Keep existing choices in their UI order and append new choices from the spec.
 const suggestionEnums = {
@@ -38,6 +40,20 @@ function textContent(node) {
     return node.value;
   }
   return (node.childNodes ?? []).map(textContent).join("");
+}
+
+export function readPublicationUrl(html) {
+  const term = findNode(parseHtml(html), node =>
+    node.tagName === "dt" && textContent(node).trim() === "This version:",
+  );
+  const siblings = term?.parentNode.childNodes;
+  const entry = siblings?.slice(siblings.indexOf(term) + 1).find(node => node.tagName);
+  const link = entry?.tagName === "dd" && findNode(entry, node => node.tagName === "a");
+  const url = link && link.attrs.find(attr => attr.name === "href")?.value;
+  if (!versionUrlPattern.test(url ?? "")) {
+    throw new Error("The W3C publication does not have a valid dated Level 4 URL.");
+  }
+  return url;
 }
 
 const referenceBlocks = new Set([
@@ -179,96 +195,60 @@ export function renderSuggestions(snapshot) {
   ].join("\n");
 }
 
-function describeChanges(changes, autoMerge) {
-  const lines = [`Web IDL changes in the [W3C WebAuthn Level 4 publication](${specUrl}#idl-index).`, ""];
-  lines.push(autoMerge
-    ? "This PR adds choices to existing request controls. The Chromium checks cover selection and request construction."
-    : "This draft records changes that need an implementation review. Check the affected request controls and browser behavior before marking it ready.");
-  lines.push("");
-  for (const { name, added, removed } of changes.slice(0, 50)) {
-    lines.push(`### ${name}`, "", "~~~~diff");
-    lines.push(...removed.slice(0, 20).map(entry => `- ${entry}`));
-    lines.push(...added.slice(0, 20).map(entry => `+ ${entry}`));
-    if (removed.length > 20 || added.length > 20) {
-      lines.push("  See the snapshot diff for the remaining entries.");
-    }
-    lines.push("~~~~", "");
-  }
-  if (changes.length > 50) {
-    lines.push("See the snapshot diff for the remaining definitions.");
-  }
-  return lines.join("\n");
-}
-
-async function readOptional(file) {
-  try {
-    return await readFile(file, "utf8");
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
-  }
-}
-
-async function fetchPublishedSpec() {
-  const response = await fetch(specUrl, { signal: AbortSignal.timeout(30_000) });
+async function fetchPublishedSpec(url) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) {
-    throw new Error(`W3C returned HTTP ${response.status} for ${specUrl}.`);
+    throw new Error(`W3C returned HTTP ${response.status} for ${url}.`);
   }
   return response.text();
 }
 
-async function main(args) {
-  const previousJson = await readOptional(snapshotFile);
-  const previous = previousJson ? JSON.parse(previousJson) : null;
-  if (args.length === 1 && args[0] === "--codex-reference") {
-    const html = await fetchPublishedSpec();
-    if (!previous || compareSnapshots(previous, readSnapshot(html)).length) {
-      throw new Error("The published WebAuthn IDL changed after the draft PR was created.");
-    }
-    console.log(readSpecReference(html));
-    return;
+async function prepareReference(previous, folder) {
+  const latest = await fetchPublishedSpec(specUrl);
+  const publication = readPublicationUrl(latest);
+  const earlier = publication === previous.publication
+    ? latest
+    : await fetchPublishedSpec(previous.publication);
+  const current = { publication, ...readSnapshot(latest) };
+  const json = JSON.stringify(current, null, 2) + "\n";
+  const changes = compareSnapshots(previous, current);
+  const candidateAdditions = changes.length > 0 && changes.every(change => change.automatic);
+
+  await mkdir(folder, { recursive: true });
+  await Promise.all([
+    writeFile(join(folder, "previous.txt"), readSpecReference(earlier) + "\n"),
+    writeFile(join(folder, "current.txt"), readSpecReference(latest) + "\n"),
+    writeFile(join(folder, "webauthn-4.json"), json),
+    writeFile(join(folder, "webauthnSpecSuggestions.js"), renderSuggestions(current)),
+  ]);
+  console.log(`Checking ${publication} against ${previous.publication}.`);
+  if (process.env.GITHUB_OUTPUT) {
+    const digest = createHash("sha256").update(json).digest("hex").slice(0, 16);
+    await appendFile(process.env.GITHUB_OUTPUT, [
+      `publication=${publication}`,
+      `digest=${digest}`,
+      `candidate_additions=${candidateAdditions}`,
+      "",
+    ].join("\n"));
   }
-  const previousSuggestions = await readOptional(suggestionsFile);
+}
+
+async function main(args) {
+  const previous = JSON.parse(await readFile(snapshotFile, "utf8"));
+  if (!versionUrlPattern.test(previous.publication ?? "")) {
+    throw new Error("The committed WebAuthn snapshot must identify a dated W3C publication.");
+  }
   if (args.length === 1 && args[0] === "--check") {
-    if (!previous || renderSuggestions(previous) !== previousSuggestions) {
+    if (renderSuggestions(previous) !== await readFile(suggestionsFile, "utf8")) {
       throw new Error("WebAuthn suggestions do not match the committed spec snapshot.");
     }
     return;
   }
-  if (args.length && !(args.length === 2 && args[0] === "--source")) {
-    throw new Error(`Usage: node ${fileURLToPath(import.meta.url)} [--check | --source FILE | --codex-reference]`);
+  if (args.length === 2 && args[0] === "--prepare") {
+    await prepareReference(previous, args[1]);
+    return;
   }
-
-  const html = args.length ? await readFile(args[1], "utf8") : await fetchPublishedSpec();
-  const current = readSnapshot(html);
-  const json = JSON.stringify(current, null, 2) + "\n";
-  const changes = compareSnapshots(previous, current);
-  const changed = changes.length > 0;
-  const suggestions = renderSuggestions(current);
-  const suggestionsChanged = suggestions !== previousSuggestions;
-  const autoMerge = changed && suggestionsChanged && changes.every(change => change.automatic);
-
-  if (changed) {
-    await mkdir(specFolder, { recursive: true });
-    await writeFile(snapshotFile, json);
-    if (suggestionsChanged) {
-      await writeFile(suggestionsFile, suggestions);
-    }
-    console.log(describeChanges(changes, autoMerge));
-  } else {
-    console.log("The published WebAuthn Level 4 Web IDL matches the snapshot.");
-  }
-  if (process.env.GITHUB_OUTPUT) {
-    const digest = createHash("sha256").update(json).digest("hex").slice(0, 16);
-    await appendFile(process.env.GITHUB_OUTPUT, [
-      `changed=${changed}`,
-      `suggestions_changed=${suggestionsChanged}`,
-      `auto_merge=${autoMerge}`,
-      `digest=${digest}`,
-      "",
-    ].join("\n"));
-  }
+  throw new Error("Usage: node scripts/webauthn-spec.mjs --check | --prepare DIRECTORY");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
